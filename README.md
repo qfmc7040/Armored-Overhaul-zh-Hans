@@ -100,3 +100,6 @@ python ArmoredOverhaul-zh-Hans/verify_zh.py "原版zip"  "输出zip"
   改 manifest 的 Options Name/Description 即可，但要保持 `Guid`/`Name` 不变以免产生重复条目。
 - 模组更新版本后，按上面的"版本更新后的重汉化流程"用 `update_zh.py` 一键重做；
   只有作者改动了菜单文案或新增选项时才需要动 `translate.py` 的规则表。
+
+## 原模组
+[Th3chef/Armored-Overhaul](https://github.com/Th3chef/Armored-Overhaul)
