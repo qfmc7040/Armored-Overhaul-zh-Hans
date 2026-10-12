@@ -1,12 +1,15 @@
 -- HD2-Addon: mods/chef/armored_overhaul_mbt_turrets
--- Armored Overhaul 3.4.0 - Turret core: the turret settings of the TD-220 Bastion and the TD-110 Maelstrom guns,
+-- Armored Overhaul 3.5.1 - Turret core: the turret settings of the TD-220 Bastion and the TD-110 Maelstrom guns,
 -- shared by four options (2.0). Each option ships this core plus a small flag addon that says what it wants, in
 -- ArmoredOverhaulTurretOptions:
 --   MBT Turrets       (mbt = true):        the guns turn all the way round (with the turret models, whose whole top
 --                                          turns with the gun)
 --   Turret traverse   (traverse = x):      the left/right turn speed times x
 --   Turret elevation  (elevation = x):     the up/down speed times x
---   Turret aim range  (range = {lo, hi}):  how far down and up the guns aim (degrees)
+--   Gun depression    (range_lo = lo):     how far down the guns aim (degrees, below 0)
+--   Gun raise         (range_hi = hi):     how far up the guns aim (degrees)
+--   (3.4.1, the tester: "lets separate the Turret Aim Range in an upper and lower option, so folks can customize how
+--   each works") Tank Turret Aim Range (range = {lo, hi}) became these two options; the side not picked stays the game's.
 -- Whatever no picked option asks for stays the game's own. Written from scratch.
 --
 -- How it works: every turret's settings live in the game's static TurretComponent table (the same data Filediver
@@ -51,7 +54,7 @@ local FIELD_ORDER = {'yaw_speed', 'pitch_speed', 'pitch_min', 'pitch_max', 'yaw_
 -- that was not it and +0x10 is left alone again.
 
 -- MBT Turrets: the left/right arc goes all the way round (the game's is +/-20 degrees). How far down the gun aims
--- is the Tank Turret Aim Range option's (2.1 Test 7: MBT Turrets no longer lowers it to 6 below).
+-- is the Tank Gun Depression option's (2.1 Test 7: MBT Turrets no longer lowers it to 6 below).
 local ARC = 180
 -- (3.1.0 Test 26) MBT Turrets has two choices: all the way round (360, the default) and 180 (the MBT Turrets 180 folder,
 -- whose flag sets mbt_arc = 90: the guns, and the gunner view with them, turn 90 degrees either side of straight ahead)
@@ -66,7 +69,7 @@ local SECOND_LOCK = 0.01
 -- either way round its turned mount (locked again since Test 18, below) and DESIG_DOWN below / 10 above the guns' angles.
 -- (Test 15, the tester: "the laser is better, but when you set the aim range to widest, it will continue to bug out") Close
 -- ground lies far steeper below the laser than the view's own angle, so the designator now reaches down to DESIG_LOW
--- whatever the Aim Range, and a little further round.
+-- whatever the gun's range, and a little further round.
 -- (Test 18, the tester: "Maelstrom laser works, but it needs to follow the turret, its detached and can be aimed in a direction
 -- that doesnt match the barrel") Left/right is locked again (+-SECOND_LOCK, as before Test 14: its mount turns with the
 -- turret), keeping only the wider up/down reach.
@@ -82,15 +85,14 @@ local function options()
     if out.mbt and type(o.mbt_arc) == 'number' and o.mbt_arc >= 20 and o.mbt_arc < ARC then out.mbt_arc = o.mbt_arc end
     if type(o.traverse) == 'number' and o.traverse >= 0.25 and o.traverse <= 10 then out.traverse = o.traverse end
     if type(o.elevation) == 'number' and o.elevation >= 0.25 and o.elevation <= 10 then out.elevation = o.elevation end
-    local r = o.range
-    if type(r) == 'table' and type(r[1]) == 'number' and type(r[2]) == 'number' and r[1] >= -45 and r[1] < r[2] and r[2] <= 80 then
-        out.range = {r[1], r[2]}
-    end
+    if type(o.range_lo) == 'number' and o.range_lo >= -45 and o.range_lo < 0 then out.lo = o.range_lo end
+    if type(o.range_hi) == 'number' and o.range_hi > 0 and o.range_hi <= 80 then out.hi = o.range_hi end
     -- (3.0) the Mod Options Menu's values, for the options that are installed (see menu_rows)
     local m = menu_opts
     if out.traverse and m.traverse ~= nil then out.traverse = m.traverse or nil end         -- (false: Off)
     if out.elevation and m.elevation ~= nil then out.elevation = m.elevation or nil end
-    if out.range and m.range ~= nil then out.range = m.range and {m.range[1], m.range[2]} or nil end
+    if out.lo and m.lo ~= nil then out.lo = m.lo or nil end
+    if out.hi and m.hi ~= nil then out.hi = m.hi or nil end
     return out
 end
 local function options_text(o)
@@ -98,7 +100,8 @@ local function options_text(o)
     if o.mbt then t[#t + 1] = o.mbt_arc and string.format('MBT Turrets (%g degrees: %g each side)', 2 * o.mbt_arc, o.mbt_arc) or 'MBT Turrets (all the way round)' end
     if o.traverse then t[#t + 1] = string.format('traverse x%g', o.traverse) end
     if o.elevation then t[#t + 1] = string.format('elevation speed x%g', o.elevation) end
-    if o.range then t[#t + 1] = string.format('aim range %g..%g deg', o.range[1], o.range[2]) end
+    if o.lo then t[#t + 1] = string.format('gun depression %g deg', o.lo) end
+    if o.hi then t[#t + 1] = string.format('gun raise %g deg', o.hi) end
     return #t > 0 and table.concat(t, ', ') or 'none picked (everything stays the game\'s own)'
 end
 
@@ -121,7 +124,7 @@ local LIVE_KNOWN_RVA = 0x50B8B0
 local LIVE_MAP, LIVE_RECORDS = 0x68, 0xA8               -- component: entity map {entries, slots, empty key}; records
 
 -- Gunner camera preset. Known build: table at game.dll+0x32F9990, tank gunner preset id 26. Other builds: the
--- preset is found in the game's writable data by its vanilla limits, then checked against its numbered neighbours.
+-- preset is found in the game's writable data by its vanilla limits, then checked against its numbered neighbors.
 local CAMERA_KNOWN_RVA = 0x32F9990
 local CAMERA_KNOWN_ID = 26
 local CAMERA_STRIDE = 0x90
@@ -139,7 +142,7 @@ local CAMERA_VANILLA = '\x00\x00\x70\xC1\x00\x00\xC8\x41\x00\x00\x20\xC2\x00\x00
 local CAMERA_PREFIX = '\x00\x00\x80\x3E\x00\x00\x80\x3E\x00\x00\x00\x40\x00\x00\xC0\x3F\x00\x00\x00\x00\x9A\x99\x19\x3E\x9A\x99\x19\x3E'
 local MAX_TRIES = 5     -- failed writes per item before giving up
 
-local state = {version = '3.4.0', status = 'starting', table = 'unresolved', how = 'none', slots = 0, game = 'unchecked',
+local state = {version = '3.5.1', status = 'starting', table = 'unresolved', how = 'none', slots = 0, game = 'unchecked',
                last_error = 'none',
                applied = 0, errors = 0, guns = {}, frames = 0, clock = 0,
                camera = 'not found yet', options = 'not read yet', options_menu = 'not installed (the mod manager\'s picks are used)'}
@@ -218,7 +221,7 @@ end
 -- write and restored straight after. Code, guard, no-access and reserved memory are never touched.
 local old_prot = ffi.new('uint32_t[1]')
 local function page_info(address, size)
-    if VirtualQuery(address, region, ffi.sizeof('TtRegion')) == 0 then return nil end
+    if VirtualQuery(ffi.cast('void *', address), ffi.cast('void *', region), ffi.sizeof('TtRegion')) == 0 then return nil end
     local r = region[0]
     if r.state ~= 0x1000 or num(address) + size > num(r.base) + tonumber(r.size) then return nil end
     return r.protection, r.type
@@ -236,13 +239,13 @@ local function write_floats(address, size, fields, values)
     -- this process's own copy, as any write by the game does)
     if prot == 4 or prot == 8 then poke(address, fields, values); return true, how end
     if prot ~= 2 then return false, how end
-    local opened = VirtualProtect(address, size, 4, old_prot) ~= 0
-    if not opened then opened = VirtualProtect(address, size, 8, old_prot) ~= 0 end
+    local opened = VirtualProtect(ffi.cast('void *', address), size, 4, ffi.cast('void *', old_prot)) ~= 0
+    if not opened then opened = VirtualProtect(ffi.cast('void *', address), size, 8, ffi.cast('void *', old_prot)) ~= 0 end
     if not opened then return false, how .. ', open refused' end
     local restore = old_prot[0]
     local ok = pcall(poke, address, fields, values)
     -- (3.0 review) the old protection put back, checked: a page left writable is said in the result
-    local back = VirtualProtect(address, size, restore, old_prot) ~= 0
+    local back = VirtualProtect(ffi.cast('void *', address), size, restore, ffi.cast('void *', old_prot)) ~= 0
     if not back then state.errors = state.errors + 1; state.last_error = how .. ': opened for a write, its protection could not be put back' end
     return ok, how .. (back and ' (opened for the write)' or ' (opened for the write; putting its protection back failed)')
 end
@@ -269,18 +272,29 @@ end
 -- VIEW_ABOVE over its highest, never above VIEW_TOP): near straight up the turret spins round (the tester: "the tank will spin
 -- around when you look all the way up"). (3.4.0 review) the slope code (measure-only since Test 35) is gone.
 local VIEW_BELOW, VIEW_ABOVE, VIEW_TOP = 20, 15, 60     -- (Test 38) degrees beyond the gun's range; the highest view
+-- (3.5.1 Test 3) the tester: on an uphill with the turret turned back, the camera "is still locked upward". The view's low
+-- stop is measured from the hull's nose, whichever way the turret faces (Test 2 log: facing down a 30-35 degree slope with
+-- the turret turned back the view never went below +1..+4 against the horizon: nose up 35 with a -26 stop is +9), and the
+-- game takes the stops when you sit down, so they can't follow the slope (why Test 34's slope-following limits didn't help).
+-- With MBT Turrets (the turret faces any way) the low stop is VIEW_TURNED_LOW: room for a turned turret on a steep slope
+-- (Test 37 had -60 and only its top, +80, was a problem). (Test 4) Test 3's log fits the nose rule exactly (facing down 30 / 35 /
+-- 40 degrees the view stopped at -30 / -27 / -19 against the horizon: nose + -60) and the tester still couldn't look down
+-- far enough: -80 (a 40 degree hill still leaves 40 down)
+local VIEW_TURNED_LOW = -80
 -- ---------------------------------------------------------------- logging
 local function log()
     pcall(function()
         local f = loader.open_log and loader.open_log('ArmoredOverhaul-MBTTurrets.log')
         if not f then return end
         -- what a bug report needs: the game build, how the turret settings were found, each gun's values now, errors
-        f:write('Armored Overhaul - Turret settings (Tank MBT Turrets, Tank Turret Traverse, Tank Turret Elevation, Tank Turret Aim Range)\n',
+        f:write('Armored Overhaul - Turret settings (Tank MBT Turrets, Tank Turret Traverse, Tank Turret Elevation, Tank Gun Depression, Tank Gun Raise)\n',
             'version: ', state.version, '\n', 'status: ', state.status, '\n', 'game: ', state.game, '\n', 'found: ', state.how,
             '\n', 'options: ', state.options, '\n', 'options menu: ', state.options_menu, '\n')
         for _, g in ipairs(GUNS) do f:write(g.name, ': ', state.guns[g.name] or 'not found', '\n') end
         f:write('tanks already out: ', state.live or 'not looked at yet', '\n')
         f:write('gunner view: ', state.camera, '\n')
+        f:write('aiming on slopes: ', state.slope or 'not used yet', '\n')   -- (3.5.1 Test 5)
+        f:write('freelook key: ', state.freelook, '\n')                     -- (3.5.1 Test 7)
         f:write('errors: ', state.errors, '\n', 'last error: ', state.last_error, '\n')
         if TESTER then
             f:write('-- tester details --\n', 'table: ', state.table, ' (', state.slots, ' slots)\n', 'writes: ', state.applied,
@@ -434,7 +448,7 @@ local scan = {offset = 0x1000, hits = {}}
 local function scan_step()
     local size = min(0x40000 + 0x100, image_size - scan.offset)
     if size <= 0 then return true end
-    if VirtualQuery(game + scan.offset, region, ffi.sizeof('TtRegion')) == 0 then return true end
+    if VirtualQuery(ffi.cast('void *', game + scan.offset), ffi.cast('void *', region), ffi.sizeof('TtRegion')) == 0 then return true end
     local r = region[0]
     local region_end = num(r.base) + tonumber(r.size) - num(game)
     local exec = r.state == 0x1000 and (r.protection == 0x20 or r.protection == 0x40 or r.protection == 0x10)
@@ -493,7 +507,7 @@ local function live_find_step()
         live.phase = 'none'; live.text = 'not found in this game version (the tanks already out keep their values until called in again)'
         found_rvas.live_none = true; cache_save(); return
     end
-    if VirtualQuery(game + live.at, region, ffi.sizeof('TtRegion')) == 0 then live.at = live.at + 0x1000; return end
+    if VirtualQuery(ffi.cast('void *', game + live.at), ffi.cast('void *', region), ffi.sizeof('TtRegion')) == 0 then live.at = live.at + 0x1000; return end
     local r = region[0]
     local region_end = num(r.base) + tonumber(r.size) - num(game)
     local exec = r.state == 0x1000 and (r.protection == 0x20 or r.protection == 0x40 or r.protection == 0x10)
@@ -629,7 +643,7 @@ local function camera_limits(s, o)
         and v.yaw_min >= -180 and v.yaw_max <= 180 and v.yaw_min < v.yaw_max) then return nil end
     return v
 end
--- A preset is accepted only between its numbered neighbours (id - 1 before it, id + 1 after it).
+-- A preset is accepted only between its numbered neighbors (id - 1 before it, id + 1 after it).
 local function camera_check(rec)
     local s = read(rec - CAMERA_STRIDE, CAMERA_STRIDE * 3)
     if not s then return nil end
@@ -646,7 +660,7 @@ local cscan = {offset = 0x1000, prefixed = {}, other = {}}
 local function camera_scan_step()
     local size = min(0x40000 + 0x10, image_size - cscan.offset)
     if size <= 0 then return true end
-    if VirtualQuery(game + cscan.offset, region, ffi.sizeof('TtRegion')) == 0 then return true end
+    if VirtualQuery(ffi.cast('void *', game + cscan.offset), ffi.cast('void *', region), ffi.sizeof('TtRegion')) == 0 then return true end
     local r = region[0]
     local region_end = num(r.base) + tonumber(r.size) - num(game)
     if not (r.state == 0x1000 and (r.protection == 4 or r.protection == 8)) then
@@ -707,25 +721,221 @@ local FOUGHT, FIGHT_BACKS, FIGHT_WINDOW = 'another mod keeps changing it: left a
 local fight = {set = {}, backs = {}, off = {}}
 -- What the picked options ask for; everything else stays the game's own.
 local opts = {}
+-- (3.5.1 Test 5) The tester: on a steep uphill with the turret turned back, "the cannon will rise up and cant aim lower". The
+-- guns' up/down stops are measured from the hull's nose, whichever way the turret faces (as the view's: Tests 2-4), so
+-- turned back up a 40 degree hill a -15 stop is +25 against the horizon. Unlike the view's, the guns' stops reach a tank
+-- already out, so with MBT Turrets they follow the slope: both stops move by the slope under the turret's heading minus
+-- the nose's (0 facing ahead, so nothing changes there; turned back up a 40 degree hill -80). From the angle and hull
+-- axes the Turret indicator or Gunner camera publish (ArmoredOverhaulTurretAngle), in the gunner seat only, in 2 degree
+-- steps looked at every 0.1 s and written at most 4 times a second; out of the seat, without them or stale: 0.
+local next_check = 0   -- (3.5.1 Test 5: declared before slope_step, which asks for an apply)
+local SLOPE = {shift = 0, next = 0, last_key = nil, key_at = 0, writes = 0, steepest = 0, wrote_at = -1e9}
+local SLOPE_STEP, SLOPE_LIMIT = 2, 80          -- (Test 6: 80, was 89)
+local function slope_step()
+    if state.frames < SLOPE.next then return end
+    SLOPE.next = state.frames + 6
+    local want = 0
+    local seat, pub = rawget(_G, 'ArmoredOverhaulSeat'), rawget(_G, 'ArmoredOverhaulTurretAngle')
+    if opts.mbt and type(seat) == 'table' and seat.role == 2 and (seat.kind == 0x2B or seat.kind == 0x2C)
+        and type(pub) == 'table' and pub.kind == seat.kind and type(pub.angle) == 'number' and type(pub.axes) == 'table' and pub.axes.ok then
+        if pub.key ~= SLOPE.last_key then SLOPE.last_key, SLOPE.key_at = pub.key, state.clock end
+        if state.clock - SLOPE.key_at < 0.3 then          -- (not stale: published within the last 0.3 s)
+            local ax, a = pub.axes, pub.angle
+            local function clamp1(x) return max(-1, min(1, x)) end
+            local nose = math.deg(math.asin(clamp1(ax.fz)))
+            local under = math.deg(math.asin(clamp1(math.cos(a) * ax.fz + math.sin(a) * ax.rz)))
+            local s = under - nose
+            -- (a full step from what is set before it moves, so a slope on a step's edge doesn't flip back and forth)
+            if s == s then want = math.abs(s - SLOPE.shift) < SLOPE_STEP and SLOPE.shift or math.floor(s / SLOPE_STEP + 0.5) * SLOPE_STEP end
+        end
+    end
+    if want ~= SLOPE.shift and state.clock - SLOPE.wrote_at >= 0.25 then
+        SLOPE.shift, SLOPE.wrote_at = want, state.clock
+        SLOPE.writes = SLOPE.writes + 1; state.slope_changes = SLOPE.writes
+        if math.abs(want) > math.abs(SLOPE.steepest) then SLOPE.steepest = want end
+        state.slope = string.format('gun stops moved by %+d deg now (the slope under the turret minus the nose; biggest %+d, %d changes)', want, SLOPE.steepest, SLOPE.writes)
+        next_check = 0                                    -- (applied this frame: the guns and the tanks already out)
+    end
+end
+-- (3.5.1 Test 7) Freelook (the tester): hold the key bound in the Mod Bindings Menu ("Tank Turret: Freelook (hold)", controls,
+-- tab MODS, section ARMORED OVERHAUL) in a tank's gunner seat to look round while the gun stays where it points, and
+-- let go: the turret then turns to where you look. No key bound, no change.
+-- (Test 11) Test 10 caught the key (middle mouse, held up to 97 frames) but "the turret still turns": the turn speeds
+-- (Tests 7-10 set them to 0.01 while held) are taken when the tank is called in (3.0.2 Test 24), while the stops are
+-- read live (the slope stops work on tanks already out). So the main guns are held by their left/right
+-- stops instead: both put at the turret's angle when you press (from the Turret indicator / Gunner camera, as for the
+-- slopes; 0.02 degrees apart, as the second guns are locked), on the tanks already out too. The stops' sign against
+-- that angle isn't known for sure: FL_SIGN is the guess; if the turret moves away from where it was within 0.2 s, the
+-- other sign is used from then on (logged, to be fixed for the release). Up and down still follow the view for now.
+-- (Test 12) Test 11's log: "stop sign +1 (learned (the other sign))": the stops' sign is +1 (the tester saw the twitch of
+-- the first press); the check stays, for safety.
+-- (Test 13) The tester: "can the freelook keybind just use the built in keybind button config for hold/press/double tap"
+-- (Test 12 had a second, toggle binding). One binding, "Tank Turret: Freelook"; the trigger picked for its key in the
+-- game's controls decides: a trigger the game keeps down while the key is held (Hold) = Freelook while held; one that
+-- fires once (Press, Double tap, Long press ...) = on, and off the next time it fires. Told apart by the binding itself:
+-- still down the frame after it fired = held. (Tests 8-12 followed the key pressed that frame instead; that is gone.)
+-- (Test 14) The tester: "can it also freeze the tank turret elevation, as it moves with the mouse". The up/down stops
+-- (read live too, as the slope stops show) are put at the barrel's pitch when Freelook comes on: the Turret indicator /
+-- Gunner camera measure it while asked (pub.want_pitch, in the gunner seat). How the game measures its up/down stops
+-- isn't the same as that on every slope (3.5.1 Tests 3-6: the nose rule), so the hold is checked: 0.25 s after it is
+-- put, if the barrel moved, the stops are moved by what it moved, up to 3 times. No pitch measured: left/right only.
+local FL_SIGN, FL_HOLD = 1, 0.01
+local FL = {api = nil, at = 0, id = 'armored_overhaul.turret.freelook', on = false, uses = 0, n_hold = 0, n_tog = 0, longest = 0,
+            sign = FL_SIGN, flips = 0, locks = 0, unlocked = 0, sign_txt = 'not checked yet'}
+state.freelook = 'Mod Bindings Menu not installed'
+local function fl_link()
+    if FL.api or state.frames < FL.at then return end
+    FL.at = state.frames + 60
+    local B = rawget(_G, 'ModBindingsMenu')
+    if type(B) ~= 'table' or B.api ~= 1 or type(B.register_binding) ~= 'function' or type(B.is_down) ~= 'function' then return end
+    local ok, done, why = pcall(B.register_binding, FL.id, 'Tank Turret: Freelook', nil, {category = 'ARMORED OVERHAUL'})
+    if not (ok and done) then state.freelook = 'Mod Bindings Menu found, not added yet (tried again once a second): ' .. tostring(ok and why or done); return end
+    FL.api = B
+    state.freelook = 'in the controls, tab MODS (its trigger there: Hold = while held, Press / Double tap ... = on and off)'
+end
+-- (3.5.1 Test 8) the menu's binding is down only on the frame it fires for its Press trigger (Test 7 froze the guns for
+-- one frame): see Test 13 above for how each trigger is taken.
+local function fl_note()
+    state.freelook = string.format('in the controls, tab MODS (its trigger there: Hold = while held, Press / Double tap ... = on and off); used %d time(s) (%d held, %d on and off)%s%s',
+        FL.uses, FL.n_hold, FL.n_tog, FL.longest > 0 and string.format(', longest %d frames', FL.longest) or '',
+        FL.on and ', on now' or '')
+        .. string.format('; turret held by its stops %d time(s)%s, stop sign %+d (%s); up/down held %d time(s) (%d stop correction(s), barrel off by %.1f deg at most)', FL.locks,
+            FL.unlocked > 0 and string.format(' (%d time(s) no turret angle to hold)', FL.unlocked) or '', FL.sign, FL.sign_txt,
+            FL.plocks or 0, FL.pfixes or 0, FL.pworst or 0)
+end
+-- the turret's angle (degrees, + = right) published this frame or lately (0.3 s) for this tank kind, else nil
+-- (3.5.1 review) and the barrel's pitch (only asked for while Freelook is on: pub.want_pitch, set in fl_step; Test 14
+-- asked every frame in the gunner seat), and the gun mount's turn (degrees, + = left) MBT Turrets gives for this hull
+local function fl_angle(kind)
+    local pub = rawget(_G, 'ArmoredOverhaulTurretAngle')
+    if type(pub) ~= 'table' then return nil end
+    if pub.kind ~= kind or type(pub.angle) ~= 'number' or pub.angle ~= pub.angle then return nil end
+    if pub.key ~= FL.pkey then FL.pkey, FL.pkey_at = pub.key, state.clock end
+    if state.clock - (FL.pkey_at or -1e9) > 0.3 then return nil end
+    local pd = pub.pitch
+    local mounts = rawget(_G, 'ArmoredOverhaulMounts')
+    local mt = type(mounts) == 'table' and pub.hull ~= nil and mounts[pub.hull] or 0
+    return math.deg(pub.angle), (type(pd) == 'number' and pd == pd and pd > -89 and pd < 89) and pd or nil,
+        (type(mt) == 'number' and mt == mt) and mt or 0
+end
+local function fl_wrap(d) d = d % 360; return d > 180 and d - 360 or d end
+local function fl_step()
+    if not FL.api then fl_link(); return end
+    local B, held, down, inseat = FL.api, false, false, false
+    local okr, ready = true, true
+    if type(B.ready) == 'function' then okr, ready = pcall(B.ready) end
+    if okr and ready then
+        local seat = rawget(_G, 'ArmoredOverhaulSeat')
+        if type(seat) == 'table' and seat.role == 2 and (seat.kind == 0x2B or seat.kind == 0x2C) then
+            inseat = true
+            FL.now, FL.pnow, FL.mount = fl_angle(seat.kind)
+            local ok, d = pcall(B.is_down, FL.id)
+            down = ok and d == true
+        end
+    end
+    local rise = down and not FL.prev
+    FL.prev = down
+    if inseat then
+        if FL.on then
+            if FL.mode == 'hold' then held = down                               -- (Hold: up ends it)
+            elseif down and not rise and state.frames - FL.since <= 2 then held, FL.mode = true, 'hold'   -- (still down: Hold)
+            else held = not rise end                                            -- (fired once: on until it fires again)
+        elseif rise then held, FL.mode, FL.since = true, 'once', state.frames end
+    end
+    if held ~= FL.on then
+        FL.on = held
+        state.freelook_on = held or nil                  -- (3.5.1 review) MBT Turrets holds the gun mount meanwhile
+        local pub = rawget(_G, 'ArmoredOverhaulTurretAngle')
+        if type(pub) == 'table' then pub.want_pitch = held or nil end   -- (3.5.1 review) the barrel's pitch: only now
+        FL.lock, FL.base, FL.plock, FL.pbase = nil, nil, nil, nil
+        if held then
+            FL.uses = FL.uses + 1
+            if FL.now then
+                -- (3.5.1 review) the stops are measured from the gun's mount, which MBT Turrets may have turned (Tank
+                -- Turret Traverse Fast / Very fast): held at the gun's angle against the mount
+                FL.base, FL.mbase = FL.now, FL.mount or 0
+                FL.lock, FL.check_at = FL.sign * (FL.base + FL.mbase), state.clock + 0.2
+                FL.locks = FL.locks + 1
+            else FL.unlocked = FL.unlocked + 1 end
+        elseif FL.since then
+            FL.longest = math.max(FL.longest, state.frames - FL.since)
+            if FL.mode == 'hold' then FL.n_hold = FL.n_hold + 1 else FL.n_tog = FL.n_tog + 1 end
+        end
+        fl_note()
+        next_check = 0                                    -- (applied this frame: the guns and the tanks already out)
+    elseif FL.on and FL.lock and not FL.pbase and FL.pnow then
+        -- (3.5.1 review) the barrel's pitch, asked for when Freelook came on, is in: up/down held from here
+        FL.pbase, FL.plock, FL.pcheck_at, FL.pfix = FL.pnow, FL.pnow, state.clock + 0.25, 0
+        FL.plocks = (FL.plocks or 0) + 1
+        next_check = 0
+    elseif FL.on and FL.plock and FL.pcheck_at and state.clock >= FL.pcheck_at then
+        -- (Test 14) up/down: the barrel moved from where it was held: the stops moved by as much the other way
+        FL.pcheck_at = nil
+        if FL.pnow then
+            local drift = FL.pnow - FL.pbase
+            if math.abs(drift) > 0.5 and FL.pfix < 3 then
+                FL.pfix = FL.pfix + 1; FL.pfixes = (FL.pfixes or 0) + 1
+                FL.plock = max(-85, min(85, FL.plock - drift)); FL.pcheck_at = state.clock + 0.25
+                next_check = 0
+            end
+            FL.pworst = max(FL.pworst or 0, math.abs(drift))
+        end
+        fl_note()
+    elseif FL.on and FL.lock and FL.check_at and state.clock >= FL.check_at then
+        -- the stops' sign: a turret that moved away from where it was held means the other one (once; then checked
+        -- again, and a second move gives the hold up for this press). Near straight ahead both signs hold it.
+        FL.check_at = nil
+        if FL.now and math.abs(FL.base) >= 4 then
+            if math.abs(fl_wrap(FL.now - FL.base)) > 3 then
+                FL.flips = FL.flips + 1
+                if FL.flips <= 1 then
+                    FL.sign = -FL.sign; FL.lock, FL.check_at = FL.sign * (FL.base + FL.mbase), state.clock + 0.6   -- (time to turn back)
+                    FL.sign_txt = 'the turret moved away: the other sign used'
+                else FL.lock = nil; FL.sign_txt = 'the turret moved with either sign: not held' end
+            elseif FL.sign_txt == 'not checked yet' or FL.sign_txt:find('other sign', 1, true) then
+                FL.sign_txt = FL.sign == FL_SIGN and 'confirmed' or 'learned (the other sign)'
+            end
+        end
+        fl_note()
+        next_check = 0
+    end
+end
 local function wanted_for(gun)
     local o = originals[gun.name]
     local w = {yaw_speed = o.yaw_speed * (opts.traverse or 1), pitch_speed = o.pitch_speed * (opts.elevation or 1),
                yaw_min = opts.mbt and (gun.second and -SECOND_LOCK or -(opts.mbt_arc or ARC)) or o.yaw_min,
                yaw_max = opts.mbt and (gun.second and SECOND_LOCK or (opts.mbt_arc or ARC)) or o.yaw_max,
                pitch_min = o.pitch_min, pitch_max = o.pitch_max}
-    if opts.range then w.pitch_min, w.pitch_max = opts.range[1], opts.range[2] end
+    if opts.lo then w.pitch_min = opts.lo end
+    if opts.hi then w.pitch_max = opts.hi end
     if opts.mbt and gun.second and gun.tank == 'maelstrom' then      -- (left/right: +-SECOND_LOCK, above)
         -- (3.4.0 review) up as far as the gunner view goes (camera_wanted: VIEW_ABOVE, never past VIEW_TOP)
         w.pitch_min, w.pitch_max = min(w.pitch_min - DESIG_DOWN, DESIG_LOW), max(w.pitch_max, min(w.pitch_max + VIEW_ABOVE, VIEW_TOP))
+    end
+    -- (3.5.1 Test 5) the stops follow the slope under the turret. (Test 6) A player on Test 5, nose down a hill with the turret
+    -- turned back up it: the gun stood nearly upright ("aim up a slope ... the gun too high"): a nose-down tank's low stop is
+    -- not measured from the nose (the game's own view stops from the horizon there, 3.4.0 Test 36), so raising it by the
+    -- slope pushed the gun up. The stops now only ever widen: the low one only goes down, the high one only goes up, and
+    -- never past SLOPE_LIMIT, so the gun is never held up or down whichever way the game measures them.
+    if opts.mbt and SLOPE.shift ~= 0 then
+        if SLOPE.shift < 0 then w.pitch_min = max(-SLOPE_LIMIT, min(w.pitch_min, w.pitch_min + SLOPE.shift))
+        else w.pitch_max = min(SLOPE_LIMIT, max(w.pitch_max, w.pitch_max + SLOPE.shift)) end
+    end
+    -- (3.5.1 Test 11) Freelook held (last: (Test 14) the slope widening would open the up/down hold): the stops hold the main guns (both kinds: the Bastion's and Maelstrom's have the same
+    -- record, so a tank already out can't be told apart and would be left as it is if they wanted different stops)
+    if FL.on and FL.lock and not gun.second then
+        local at = max(w.yaw_min + FL_HOLD, min(w.yaw_max - FL_HOLD, FL.lock))
+        w.yaw_min, w.yaw_max = at - FL_HOLD, at + FL_HOLD
+        if FL.plock then w.pitch_min, w.pitch_max = FL.plock - FL_HOLD, FL.plock + FL_HOLD end   -- (Test 14) up/down too
     end
     return w
 end
 
 -- (3.4.0 Test 34) A user: on a slope "the camera's vertical aiming restrictions are calculated relative to the world
 -- horizon rather than the tank's local orientation" (see VIEW_BELOW at the top for what Tests 34-38 found).
--- The gunner view turns all the way round with MBT Turrets (the gun only goes where the view looks); with Tank Turret
--- Aim Range it looks VIEW_BELOW lower than the lowest gun angle and VIEW_ABOVE higher than the highest (at most
--- VIEW_TOP), never less than the game's own view.
+-- The gunner view turns all the way round with MBT Turrets (the gun only goes where the view looks); with Tank Gun
+-- Depression it looks VIEW_BELOW lower than the lowest gun angle, with Tank Gun Raise VIEW_ABOVE higher than the highest
+-- (at most VIEW_TOP: on Raise Highest the view stops at the gun's own top), never less than the game's own view.
 local function camera_wanted()
     local o = originals.camera
     local lo, hi = o.pitch_min, o.pitch_max
@@ -734,7 +944,10 @@ local function camera_wanted()
     -- against the hull (about +84 at every slope); but near straight up the turret spun round (the tester: "the tank will spin around
     -- when you look all the way up"). So the view now goes VIEW_BELOW lower than the lowest gun angle and VIEW_ABOVE
     -- higher than the highest, never above VIEW_TOP: room for the ground's tilt without reaching the spin.
-    if opts.range then lo, hi = min(lo, opts.range[1] - VIEW_BELOW), max(hi, min(opts.range[2] + VIEW_ABOVE, VIEW_TOP)) end
+    -- (3.4.1) per side: Gun Depression moves the low stop, Gun Raise the high one; a side not picked stays the game's
+    if opts.lo then lo = min(lo, opts.lo - VIEW_BELOW) end
+    if opts.hi then hi = max(hi, min(opts.hi + VIEW_ABOVE, VIEW_TOP)) end
+    if opts.mbt then lo = min(lo, VIEW_TURNED_LOW) end   -- (3.5.1 Test 3)
     -- (Test 26) with the 180 choice the view stops where the gun does, so the gun never fires off to the side of where
     -- it points (the game's own view goes 20 degrees past its gun)
     local arc = opts.mbt and (opts.mbt_arc or 180)
@@ -879,7 +1092,6 @@ end
 
 -- ---------------------------------------------------------------- main loop
 local phase = 'gate'
-local next_check = 0
 -- ---------------------------------------------------------------- Mod Options Menu (3.0)
 -- With CowboyBingus's Mod Options Menu installed, these settings show in the game's MODS tab under ARMORED OVERHAUL
 -- and the menu keeps their values; without it nothing changes (the mod manager's picks and the defaults are used).
@@ -890,7 +1102,7 @@ local next_check = 0
 -- menu_rows[group]: {{id, spec, key}, ...} or a function making it; menu_set(key, value) applies a value.
 local menu_rows, menu_set, menu_link = {}, nil, nil
 do
-    local MENU_ORDER = {'speed', 'power', 'grip', 'steering', 'throttle', 'stability', 'turret', 'autoloader', 'gunner_drive', 'driver_panel', 'camera', 'indicator', 'loadout'}
+    local MENU_ORDER = {'speed', 'power', 'grip', 'steering', 'throttle', 'stability', 'collision', 'turret', 'autoloader', 'gunner_drive', 'driver_panel', 'camera', 'indicator', 'loadout'}
     local hub = rawget(_G, 'ArmoredOverhaulMenu')
     if type(hub) ~= 'table' or type(hub.groups) ~= 'table' then hub = {groups = {}, done = {}}; rawset(_G, 'ArmoredOverhaulMenu', hub) end
     for _, g in ipairs({'turret'}) do
@@ -939,17 +1151,18 @@ end
 -- once-a-second look stays for older loaders and for a menu that turns up later
 do
     local L = rawget(_G, 'CowboyBingusModLoader')
-    if type(L) == 'table' and type(L.after_startup) == 'function' then pcall(L.after_startup, function() pcall(menu_link, true) end) end
+    if type(L) == 'table' and type(L.after_startup) == 'function' then pcall(L.after_startup, function() pcall(menu_link, true); FL.at = 0; pcall(fl_link) end) end
 end
 -- (3.0) the menu holds the mod manager's own options only, with their names and choices (plus Off), in the
 -- mod manager's order; it fine-tunes what is installed.
-local RANGES = {{-6, 30}, {-10, 35}, {-15, 45}}       -- Tank Turret Aim Range: Wide, Wider, Widest
+local DEPRESSIONS = {-6, -10, -15}                     -- (3.4.1) Tank Gun Depression: Low, Lower, Lowest
+local RAISES = {30, 45, 60}                            -- (3.4.1) Tank Gun Raise: High, Higher, Highest (Test 2, the tester: "raise the gun more than 45, maybe 60"; was 30, 35, 45)
 local SPEEDS = {1.25, 1.5, 2}                          -- Elevation: Quick, Fast, Very fast
 local TRAVERSE_SPEEDS = {1.5, 2, 3}                    -- (3.1.0 Test 26) Traverse: Quick, Fast, Very fast
 local function tag(v) return (string.format('%g', v):gsub('%.', '_')) end
 local function pick_of(list, v)
     for i, x in ipairs(list) do
-        if type(x) == 'table' and type(v) == 'table' and x[1] == v[1] and x[2] == v[2] or x == v then return i + 1 end
+        if x == v then return i + 1 end
     end
     return 2
 end
@@ -979,11 +1192,19 @@ menu_rows.turret = function()
             choices = {'关闭', '较快 (x1.25)', '快 (x1.5)', '极快 (x2)'}, default = pick_of(SPEEDS, o.elevation),
             description = '堡垒与风暴漩涡火炮的俯仰速度（游戏原版为每秒 35 度），炮手视角随火炮一起上下移动。所有坦克立即生效；视角自下次进入炮手席时改变。'}, 'elevation'}
     end
-    if type(o.range) == 'table' then
-        local pick = pick_of(RANGES, o.range)
-        rows[#rows + 1] = {'armored_overhaul.turret.aim_range.' .. (pick - 1), {type = 'choice', label = '坦克火炮俯仰范围',
-            choices = {'关闭', '加宽 (-6..+30 度)', '更宽 (-10..+35 度)', '最宽 (-15..+45 度)'}, default = pick,
-            description = '堡垒与风暴漩涡火炮的俯仰角范围（游戏原版为向下 3 度到向上 25 度），炮手视角随火炮一起上下移动。所有坦克立即生效；视角自下次进入炮手席时改变。'}, 'range'}
+    -- (3.4.1) Tank Turret Aim Range split in two: one row each (new ids, so a 3.4.0 Aim Range value doesn't carry over),
+    -- named by the installed angle like Traverse and Elevation (3.4.1 review: a later change of steps starts fresh)
+    if type(o.range_lo) == 'number' then
+        local pick = pick_of(DEPRESSIONS, o.range_lo)
+        rows[#rows + 1] = {'armored_overhaul.turret.gun_depression.' .. tag(-o.range_lo), {type = 'choice', label = 'Tank Gun Depression',
+            choices = {'Off', 'Low (6 below)', 'Lower (10 below)', 'Lowest (15 below)'}, default = pick,
+            description = 'How far down the Bastion and Maelstrom guns aim (the game: 3 degrees below level), and the gunner view down with them. Changes every tank at once; the view from the next time you sit in the gunner seat.'}, 'lo'}
+    end
+    if type(o.range_hi) == 'number' then
+        local pick = pick_of(RAISES, o.range_hi)
+        rows[#rows + 1] = {'armored_overhaul.turret.gun_raise.' .. tag(o.range_hi), {type = 'choice', label = 'Tank Gun Raise',
+            choices = {'Off', 'High (30 above)', 'Higher (45 above)', 'Highest (60 above)'}, default = pick,
+            description = 'How far up the Bastion and Maelstrom guns aim (the game: 25 degrees above level), and the gunner view up with them. Changes every tank at once; the view from the next time you sit in the gunner seat.'}, 'hi'}
     end
     return rows
 end
@@ -994,7 +1215,8 @@ menu_set = function(key, v)
         if type(o) == 'table' and SHIFTS[v] then o.mbt_shift = SHIFTS[v] end
         return
     end
-    if key == 'range' then menu_opts.range = RANGES[v - 1] or false
+    if key == 'lo' then menu_opts.lo = DEPRESSIONS[v - 1] or false
+    elseif key == 'hi' then menu_opts.hi = RAISES[v - 1] or false
     elseif key == 'traverse' then menu_opts.traverse = TRAVERSE_SPEEDS[v - 1] or false
     elseif key == 'elevation' then menu_opts.elevation = SPEEDS[v - 1] or false end
     next_check = 0                                       -- (applied at the next frame)
@@ -1003,6 +1225,8 @@ local shown
 local function tick()
     state.frames = state.frames + 1
     menu_link(state.frames)
+    if phase == 'ready' then slope_step() end                           -- (3.5.1 Test 5)
+    fl_step()                                                            -- (3.5.1 Test 7)
     if phase ~= 'gate' and phase ~= 'off' then camera_step() end
     if live.phase == 'search' and phase == 'ready' then
         live_find_step()
@@ -1079,7 +1303,10 @@ local function tick()
             end
             local summary = state.status .. state.camera .. state.errors .. state.options .. (state.live or '')   -- (Test 28) the tanks-out line too
             for _, g in ipairs(GUNS) do summary = summary .. (state.guns[g.name] or '') end
-            if summary ~= shown then shown = summary; log() end
+            -- (3.5.1 review) Freelook's line at most every 30 s (Tests 11-15 wrote the log at every press and let-go;
+            -- the game closing writes it too)
+            local fl_due = state.freelook ~= FL.logged and state.clock - (FL.logged_at or -1e9) >= 30
+            if summary ~= shown or fl_due then shown = summary; FL.logged, FL.logged_at = state.freelook, state.clock; log() end
         end
         next_check = state.frames + (settled and 600 or 120)
     end

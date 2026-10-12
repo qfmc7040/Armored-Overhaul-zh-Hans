@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Translate Armored Overhaul in-game menu texts (ModOptionsMenu rows,
 ModBindingsMenu entries and the shared category name) inside the extracted
-patch lua sources. Rule sets cover 3.3.0 and 3.4.0 layouts: 3.4.0 moved each
-option's title/choices/description into the PARTS table of a shared source.
+patch lua sources. The rule sets follow the mod's current layout: 3.4.0 moved
+each option's title/choices/description into the PARTS table of a shared
+source, and 3.5.1 split Turret Aim Range into Gun Depression + Gun Raise,
+added Collision Damage, and gave Turret Core a Freelook binding.
 
 Rules are exact source segments; every rule carries the match count expected
 in each file that carries it, so any drift aborts instead of silently skipping.
@@ -104,11 +106,23 @@ RULES = {
          "choices = {'关闭', '较快 (x1.25)', '快 (x1.5)', '极快 (x2)'}, default = pick_of(SPEEDS, o.elevation),", 1),
         ("description = 'How fast the Bastion and Maelstrom guns move up and down (the game: 35 degrees a second), and the gunner view up/down with them. Changes every tank at once; the view from the next time you sit in the gunner seat.'",
          "description = '堡垒与风暴漩涡火炮的俯仰速度（游戏原版为每秒 35 度），炮手视角随火炮一起上下移动。所有坦克立即生效；视角自下次进入炮手席时改变。'", 1),
-        ("label = 'Tank Turret Aim Range',", "label = '坦克火炮俯仰范围',", 1),
-        ("choices = {'Off', 'Wide (-6..+30 deg)', 'Wider (-10..+35 deg)', 'Widest (-15..+45 deg)'}, default = pick,",
-         "choices = {'关闭', '加宽 (-6..+30 度)', '更宽 (-10..+35 度)', '最宽 (-15..+45 度)'}, default = pick,", 1),
-        ("description = 'How far down and up the Bastion and Maelstrom guns aim (the game: 3 below to 25 above), and the gunner view up/down with them. Changes every tank at once; the view from the next time you sit in the gunner seat.'",
-         "description = '堡垒与风暴漩涡火炮的俯仰角范围（游戏原版为向下 3 度到向上 25 度），炮手视角随火炮一起上下移动。所有坦克立即生效；视角自下次进入炮手席时改变。'", 1),
+        ("label = 'Tank Gun Depression',", "label = '坦克火炮俯角',", 1),
+        ("choices = {'Off', 'Low (6 below)', 'Lower (10 below)', 'Lowest (15 below)'}, default = pick,",
+         "choices = {'关闭', '低（下压 6 度）', '更低（下压 10 度）', '最低（下压 15 度）'}, default = pick,", 1),
+        ("description = 'How far down the Bastion and Maelstrom guns aim (the game: 3 degrees below level), and the gunner view down with them. Changes every tank at once; the view from the next time you sit in the gunner seat.'",
+         "description = '堡垒与风暴漩涡火炮可向下瞄准的角度（游戏原版为低于水平 3 度），炮手视角随之下移。所有坦克立即生效；视角自下次进入炮手席时改变。'", 1),
+        ("label = 'Tank Gun Raise',", "label = '坦克火炮仰角',", 1),
+        ("choices = {'Off', 'High (30 above)', 'Higher (45 above)', 'Highest (60 above)'}, default = pick,",
+         "choices = {'关闭', '高（上抬 30 度）', '更高（上抬 45 度）', '最高（上抬 60 度）'}, default = pick,", 1),
+        ("description = 'How far up the Bastion and Maelstrom guns aim (the game: 25 degrees above level), and the gunner view up with them. Changes every tank at once; the view from the next time you sit in the gunner seat.'",
+         "description = '堡垒与风暴漩涡火炮可向上瞄准的角度（游戏原版为高于水平 25 度），炮手视角随之上移。所有坦克立即生效；视角自下次进入炮手席时改变。'", 1),
+        ("'Tank Turret: Freelook'", "'坦克炮塔：自由观察'", 1),
+    ],
+    # (3.5.1) Collision Damage: one toggle row
+    'A223EC3A199F34E3': [
+        ("label = 'Tank Collision Damage Boost', default = true,", "label = '坦克碰撞伤害强化', default = true,", 1),
+        ("description = 'The faster the Bastion and Maelstrom drive into things, the harder they hit: demolition force 30 when crawling, 35 at half speed, 40 from three-quarter speed (walls, fences, small buildings). Changes every tank at once; turning it off puts the game\\'s own back.'",
+         "description = '堡垒与风暴漩涡撞上物体时车速越快、破坏力越强：慢速时为 30，半速为 35，四分之三速及以上为 40（对围墙、栅栏、小型建筑）。所有坦克立即生效；关闭后恢复游戏原本的数值。'", 1),
     ],
     # (3.4.0) handling family: one source per option (grip / torque / speed /
     # gear shifts / stability), five builds sharing the same PARTS texts
@@ -150,7 +164,7 @@ RULES = {
 }
 
 # files that carry the shared category name; only these register bindings
-BINDING_FILES = {'5F6C588CECAB9733', '8F7FD48E0ECA9B5E'}
+BINDING_FILES = {'5F6C588CECAB9733', '8F7FD48E0ECA9B5E', '1AC7D6D7F0E75FFB'}
 CARRIES_COMMON = set(RULES)
 
 

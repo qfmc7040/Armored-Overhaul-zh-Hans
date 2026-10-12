@@ -33,9 +33,9 @@ PATTERNS = [
 ]
 # {name = '...'} rows: menu choice tables (e.g. Tank Core's vehicle list) are
 # user-facing, but the mod's internal identification tables also carry a name
-# plus hull/mat/tex/slot fields and never reach the screen — those are notes.
+# plus resource fields (hull/mat/tex/slot/res) or hex entity hashes — log only.
 NAMED = re.compile(r"\{name = '((?:[^'\\]|\\.)*)'")
-INTERNAL = re.compile(r"\{name = '(?:[^'\\]|\\.)*'[^}]{0,240}?(?:hull|mat|tex|slot|res) =")
+INTERNAL = re.compile(r"\{name = '(?:[^'\\]|\\.)*'[^}]{0,240}?(?:(?:hull|mat|tex|slot|res) =|0x)")
 CHOICES = re.compile(r"choices = \{([^}]*)\}")
 QSTR = re.compile(r"'((?:[^'\\]|\\.)*)'")
 
