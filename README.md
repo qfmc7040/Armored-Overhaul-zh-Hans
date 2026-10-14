@@ -1,23 +1,23 @@
-# Armored Overhaul 简体中文汉化（当前：3.5.1）
+# Armored Overhaul 简体中文汉化（当前：3.5.2）
 
-成品：`HD2\Armored-Overhaul-3.5.1-zh-Hans.zip`
+成品：`HD2\Armored-Overhaul-3.5.2-zh-Hans.zip`
 （与原版同 GUID `370555ae-cb28-4b9d-96d0-8381505c3f89`，导入即原位更新）。
-3.4.0 / 3.3.0 旧成品可删。若你在别处维护本项目（例如 `E:\Git Fork\Armored-Overhaul-zh-Hans`），
+3.5.1 / 3.4.0 / 3.3.0 旧成品可删。若你在别处维护本项目（例如 `E:\Git Fork\Armored-Overhaul-zh-Hans`），
 更新脚本与成品已同步过去，可直接用那边的同一套命令。
 
 ## 汉化范围（游戏内全部会显示的模组文本）
 
-3.5.1 共 **31 个菜单模块**全部汉化：
+3.5.2 共 **31 个菜单模块**全部汉化：
 
 - **模组选项菜单（MODS 页，类别「装甲强化」）**：
   坦克极速 / 坦克发动机扭矩 / 坦克抓地力 / 坦克稳定性 / 坦克油门响应 /
   坦克油门响应（换挡）/ 坦克转向 / 坦克炮塔位置 / 坦克炮塔回转速度 /
-  坦克火炮俯仰速度 / **坦克火炮俯角** / **坦克火炮仰角** /
-  **坦克碰撞伤害强化** / 坦克炮手镜头 / 坦克自动装弹机 /
+  坦克火炮俯仰速度 / 坦克火炮俯角 / 坦克火炮仰角 /
+  坦克碰撞伤害强化 / 坦克炮手镜头 / 坦克自动装弹机 /
   炮手驾驶 / 驾驶员面板 / 载具指示器 / 载具配置——含全部下拉选项与描述。
-- **模组绑定菜单（控制页 MODS 分区「装甲强化」）** 12 条按键：
-  炮手驾驶：前进/后退/左转/右转/升挡/降挡/手刹/鸣笛/烟雾（风暴漩涡），
-  炮手镜头：拉近/拉远，**坦克炮塔：自由观察**。
+- **模组绑定菜单（控制页 MODS 分区「装甲强化」）** 8 条按键：
+  炮手驾驶：前进/后退/手刹/鸣笛/烟雾（风暴漩涡），
+  炮手镜头：拉近/拉远，坦克炮塔：自由观察。
 - **术语**按社区 wiki 口径（`terms.json`/`stratagems_full.json`）：
   Bastion=堡垒，Maelstrom=风暴漩涡，FRV=快速侦察载具，Exosuit=外骨骼装甲。
 
@@ -28,6 +28,7 @@
 | 3.3.0 | 18 | 文案写在各文件的 `menu_rows` 里 | 首版 9 个 hash 的规则 |
 | 3.4.0 | 30 | 驾驶组 5 个选项合并为一套源码，文案移入 `PARTS` 表（`title`/`choices`/`description`）；新增 Top Speed / Engine Torque / Gear Shifts / Stability / Throttle Response 五组 | 新增 6 个 hash（4 组新选项 + 2 个家族源），改写 Camera 档位、Turret Core 三条描述 |
 | 3.5.1 | 31 | Turret Aim Range 拆成 **Gun Depression（Low/Lower/Lowest）+ Gun Raise（High/Higher/Highest）** 两行新 id；新增 **Collision Damage** toggle；Turret Core 新增 **Freelook** 绑定（该模块开始注册按键） | 删除旧 Aim Range 规则，新增俯角/仰角/碰撞伤害/自由观察规则；Turret Core 加入绑定文件集合 |
+| 3.5.2 | 31 | **按键从 9 条减到 5 条**：Steer Left/Right、Shift Up/Down 四条绑定删除（转向与换挡改回游戏自带按键 A/D 与 Shift/CTRL）；Gunner Drive 描述改写（说明替代哪几个默认键） | 删除 4 条按键规则，改写 Gunner Drive 描述规则 |
 
 
 ## 为什么是直接改 Lua 而不是翻译包
@@ -89,7 +90,7 @@ python ArmoredOverhaul-zh-Hans/verify_zh.py "原版zip"  "输出zip"
 
 安全边界：
 - 每个**含 Lua 的 patch** 在重建前先做"原样提取→原样重建→逐字节对比"回环测试，全部通过才动手
-  （3.5.1 实测 48 个含 Lua 的 patch 全部无损）；
+  （3.5.2 实测 48 个含 Lua 的 patch 全部无损）；
 - 不含 Lua 的游戏资源 patch（悬挂、FRV 稳定、炮塔模型/骷髅贴图等）原字节拷贝，绝不重建；
 - 中文文本不含单引号/反斜杠（全角标点），不会破坏 Lua 字符串语法。
 
