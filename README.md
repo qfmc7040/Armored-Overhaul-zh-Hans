@@ -1,13 +1,13 @@
-# Armored Overhaul 简体中文汉化（当前：3.5.2）
+# Armored Overhaul 简体中文汉化（当前：3.5.3）
 
-成品：`HD2\Armored-Overhaul-3.5.2-zh-Hans.zip`
+成品：`HD2\Armored-Overhaul-3.5.3-zh-Hans.zip`
 （与原版同 GUID `370555ae-cb28-4b9d-96d0-8381505c3f89`，导入即原位更新）。
-3.5.1 / 3.4.0 / 3.3.0 旧成品可删。若你在别处维护本项目（例如 `E:\Git Fork\Armored-Overhaul-zh-Hans`），
+3.5.2 / 3.5.1 / 3.4.0 / 3.3.0 旧成品可删。若你在别处维护本项目（例如 `E:\Git Fork\Armored-Overhaul-zh-Hans`），
 更新脚本与成品已同步过去，可直接用那边的同一套命令。
 
 ## 汉化范围（游戏内全部会显示的模组文本）
 
-3.5.2 共 **31 个菜单模块**全部汉化：
+3.5.3 共 **31 个菜单模块**全部汉化：
 
 - **模组选项菜单（MODS 页，类别「装甲强化」）**：
   坦克极速 / 坦克发动机扭矩 / 坦克抓地力 / 坦克稳定性 / 坦克油门响应 /
@@ -29,6 +29,7 @@
 | 3.4.0 | 30 | 驾驶组 5 个选项合并为一套源码，文案移入 `PARTS` 表（`title`/`choices`/`description`）；新增 Top Speed / Engine Torque / Gear Shifts / Stability / Throttle Response 五组 | 新增 6 个 hash（4 组新选项 + 2 个家族源），改写 Camera 档位、Turret Core 三条描述 |
 | 3.5.1 | 31 | Turret Aim Range 拆成 **Gun Depression（Low/Lower/Lowest）+ Gun Raise（High/Higher/Highest）** 两行新 id；新增 **Collision Damage** toggle；Turret Core 新增 **Freelook** 绑定（该模块开始注册按键） | 删除旧 Aim Range 规则，新增俯角/仰角/碰撞伤害/自由观察规则；Turret Core 加入绑定文件集合 |
 | 3.5.2 | 31 | **按键从 9 条减到 5 条**：Steer Left/Right、Shift Up/Down 四条绑定删除（转向与换挡改回游戏自带按键 A/D 与 Shift/CTRL）；Gunner Drive 描述改写（说明替代哪几个默认键） | 删除 4 条按键规则，改写 Gunner Drive 描述规则 |
+| 3.5.3 | 31 | 删除 3 个遗留的 Aim Range 旧文件夹（3.5.1 拆分后残留的空壳）；新增 Turret Hit Areas 资源模块（无菜单文本）；源码注释版本号统一更新 | 规则表无需变更（全部命中，0 缺口） |
 
 
 ## 为什么是直接改 Lua 而不是翻译包

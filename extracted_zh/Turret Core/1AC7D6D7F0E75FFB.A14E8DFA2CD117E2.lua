@@ -1,5 +1,5 @@
 -- HD2-Addon: mods/chef/armored_overhaul_mbt_turrets
--- Armored Overhaul 3.5.1 - Turret core: the turret settings of the TD-220 Bastion and the TD-110 Maelstrom guns,
+-- Armored Overhaul 3.5.3 - Turret core: the turret settings of the TD-220 Bastion and the TD-110 Maelstrom guns,
 -- shared by four options (2.0). Each option ships this core plus a small flag addon that says what it wants, in
 -- ArmoredOverhaulTurretOptions:
 --   MBT Turrets       (mbt = true):        the guns turn all the way round (with the turret models, whose whole top
@@ -142,7 +142,7 @@ local CAMERA_VANILLA = '\x00\x00\x70\xC1\x00\x00\xC8\x41\x00\x00\x20\xC2\x00\x00
 local CAMERA_PREFIX = '\x00\x00\x80\x3E\x00\x00\x80\x3E\x00\x00\x00\x40\x00\x00\xC0\x3F\x00\x00\x00\x00\x9A\x99\x19\x3E\x9A\x99\x19\x3E'
 local MAX_TRIES = 5     -- failed writes per item before giving up
 
-local state = {version = '3.5.1', status = 'starting', table = 'unresolved', how = 'none', slots = 0, game = 'unchecked',
+local state = {version = '3.5.3', status = 'starting', table = 'unresolved', how = 'none', slots = 0, game = 'unchecked',
                last_error = 'none',
                applied = 0, errors = 0, guns = {}, frames = 0, clock = 0,
                camera = 'not found yet', options = 'not read yet', options_menu = 'not installed (the mod manager\'s picks are used)'}
@@ -783,12 +783,17 @@ local FL_SIGN, FL_HOLD = 1, 0.01
 local FL = {api = nil, at = 0, id = 'armored_overhaul.turret.freelook', on = false, uses = 0, n_hold = 0, n_tog = 0, longest = 0,
             sign = FL_SIGN, flips = 0, locks = 0, unlocked = 0, sign_txt = 'not checked yet'}
 state.freelook = 'Mod Bindings Menu not installed'
+-- (3.5.2) Freelook asks the menu for its key first: the menu has 29 automatic key slots shared by every mod, and Freelook
+-- (the newest key) was asked for last, so a nearly full menu left it out. Tank Core (Gunner Drive) and the Gunner camera
+-- (zoom) wait while this flag is set, at most 600 frames; it is cleared once Freelook has asked (added or not).
+rawset(_G, 'ArmoredOverhaulFreelookFirst', true)
 local function fl_link()
     if FL.api or state.frames < FL.at then return end
     FL.at = state.frames + 60
     local B = rawget(_G, 'ModBindingsMenu')
     if type(B) ~= 'table' or B.api ~= 1 or type(B.register_binding) ~= 'function' or type(B.is_down) ~= 'function' then return end
-    local ok, done, why = pcall(B.register_binding, FL.id, 'Tank Turret: Freelook', nil, {category = 'ARMORED OVERHAUL'})
+    local ok, done, why = pcall(B.register_binding, FL.id, '坦克炮塔：自由观察', nil, {category = '装甲强化'})
+    rawset(_G, 'ArmoredOverhaulFreelookFirst', false)
     if not (ok and done) then state.freelook = 'Mod Bindings Menu found, not added yet (tried again once a second): ' .. tostring(ok and why or done); return end
     FL.api = B
     state.freelook = 'in the controls, tab MODS (its trigger there: Hold = while held, Press / Double tap ... = on and off)'
@@ -1196,15 +1201,15 @@ menu_rows.turret = function()
     -- named by the installed angle like Traverse and Elevation (3.4.1 review: a later change of steps starts fresh)
     if type(o.range_lo) == 'number' then
         local pick = pick_of(DEPRESSIONS, o.range_lo)
-        rows[#rows + 1] = {'armored_overhaul.turret.gun_depression.' .. tag(-o.range_lo), {type = 'choice', label = 'Tank Gun Depression',
-            choices = {'Off', 'Low (6 below)', 'Lower (10 below)', 'Lowest (15 below)'}, default = pick,
-            description = 'How far down the Bastion and Maelstrom guns aim (the game: 3 degrees below level), and the gunner view down with them. Changes every tank at once; the view from the next time you sit in the gunner seat.'}, 'lo'}
+        rows[#rows + 1] = {'armored_overhaul.turret.gun_depression.' .. tag(-o.range_lo), {type = 'choice', label = '坦克火炮俯角',
+            choices = {'关闭', '低（下压 6 度）', '更低（下压 10 度）', '最低（下压 15 度）'}, default = pick,
+            description = '堡垒与风暴漩涡火炮可向下瞄准的角度（游戏原版为低于水平 3 度），炮手视角随之下移。所有坦克立即生效；视角自下次进入炮手席时改变。'}, 'lo'}
     end
     if type(o.range_hi) == 'number' then
         local pick = pick_of(RAISES, o.range_hi)
-        rows[#rows + 1] = {'armored_overhaul.turret.gun_raise.' .. tag(o.range_hi), {type = 'choice', label = 'Tank Gun Raise',
-            choices = {'Off', 'High (30 above)', 'Higher (45 above)', 'Highest (60 above)'}, default = pick,
-            description = 'How far up the Bastion and Maelstrom guns aim (the game: 25 degrees above level), and the gunner view up with them. Changes every tank at once; the view from the next time you sit in the gunner seat.'}, 'hi'}
+        rows[#rows + 1] = {'armored_overhaul.turret.gun_raise.' .. tag(o.range_hi), {type = 'choice', label = '坦克火炮仰角',
+            choices = {'关闭', '高（上抬 30 度）', '更高（上抬 45 度）', '最高（上抬 60 度）'}, default = pick,
+            description = '堡垒与风暴漩涡火炮可向上瞄准的角度（游戏原版为高于水平 25 度），炮手视角随之上移。所有坦克立即生效；视角自下次进入炮手席时改变。'}, 'hi'}
     end
     return rows
 end

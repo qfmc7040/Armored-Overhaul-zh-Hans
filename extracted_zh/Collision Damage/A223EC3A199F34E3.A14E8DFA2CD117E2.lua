@@ -1,5 +1,5 @@
 -- HD2-Addon: mods/chef/armored_overhaul_collision_damage
--- Armored Overhaul 3.5.1 - Tank Collision Damage Boost: the TD-220 Bastion and TD-110 Maelstrom break the walls, fences and
+-- Armored Overhaul 3.5.3 - Tank Collision Damage Boost: the TD-220 Bastion and TD-110 Maelstrom break the walls, fences and
 -- buildings they drive into instead of stopping dead against them. Written from scratch. (Named Tank Wall Breaking until
 -- 3.5.0 Test 3: the tester named it Tank Collision Damage Boost, since it breaks small buildings too.)
 --
@@ -55,7 +55,7 @@ local PEAK_HOLD = 0.25             -- (Test 7, the tester: "it seems to stay on 
 local GAME = {25, 35}                          -- the game's own values for both tanks (Sept 2026 build)
 local RING = 128                               -- speed samples kept per tank (PEAK_HOLD at up to ~500 frames a second; 3.5.0: 64)
 
-local S = {version = '3.5.1', status = 'starting', game = 'unchecked', found = 'not yet', how = 'none',
+local S = {version = '3.5.3', status = 'starting', game = 'unchecked', found = 'not yet', how = 'none',
            tanks = 'not yet', writes = 0, reapplied = 0, errors = 0, last_error = 'none',
            options_menu = 'not installed (the mod manager\'s pick)', frames = 0}
 rawset(_G, 'ArmoredOverhaulCollisionDamage', S)
@@ -327,7 +327,7 @@ do
         st.menu_added = st.menu_added or 0
         for _, r in ipairs(okr and rows or {}) do
             local id, spec, key = r[1], r[2], r[3]
-            spec.mod = 'ARMORED OVERHAUL'
+            spec.mod = '装甲强化'
             local ok, done, why = pcall(M.register_option, id, spec)
             if ok and done then
                 st.menu_added = st.menu_added + 1
@@ -359,8 +359,8 @@ do
 end
 -- one switch, on when installed; off = the game's own
 menu_rows.collision = {
-    {'armored_overhaul.collision_damage', {type = 'toggle', label = 'Tank Collision Damage Boost', default = true,
-        description = 'The faster the Bastion and Maelstrom drive into things, the harder they hit: demolition force 30 when crawling, 35 at half speed, 40 from three-quarter speed (walls, fences, small buildings). Changes every tank at once; turning it off puts the game\'s own back.'}, 'on'},
+    {'armored_overhaul.collision_damage', {type = 'toggle', label = '坦克碰撞伤害强化', default = true,
+        description = '堡垒与风暴漩涡撞上物体时车速越快、破坏力越强：慢速时为 30，半速为 35，四分之三速及以上为 40（对围墙、栅栏、小型建筑）。所有坦克立即生效；关闭后恢复游戏原本的数值。'}, 'on'},
 }
 menu_set = function(key, v)
     if key ~= 'on' then return end
