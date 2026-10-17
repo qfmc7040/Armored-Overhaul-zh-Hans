@@ -1,14 +1,15 @@
-# Armored Overhaul 简体中文汉化（当前：3.5.3）
+# Armored Overhaul 简体中文汉化（当前：3.6.0）
 
 ## 汉化范围（游戏内全部会显示的模组文本）
 
-3.5.3 共 **31 个菜单模块**全部汉化：
+3.6.0 共 **33 个菜单模块**全部汉化：
 
 - **模组选项菜单（MODS 页，类别「装甲强化」）**：
   坦克极速 / 坦克发动机扭矩 / 坦克抓地力 / 坦克稳定性 / 坦克油门响应 /
   坦克油门响应（换挡）/ 坦克转向 / 坦克炮塔位置 / 坦克炮塔回转速度 /
   坦克火炮俯仰速度 / 坦克火炮俯角 / 坦克火炮仰角 /
   坦克碰撞伤害强化 / 坦克炮手镜头 / 坦克自动装弹机 /
+  风暴漩涡射速 / 风暴漩涡单弹链 / 快速侦察载具防爆胎 /
   炮手驾驶 / 驾驶员面板 / 载具指示器 / 载具配置——含全部下拉选项与描述。
 - **模组绑定菜单（控制页 MODS 分区「装甲强化」）** 8 条按键：
   炮手驾驶：前进/后退/手刹/鸣笛/烟雾（风暴漩涡），
@@ -25,6 +26,7 @@
 | 3.5.1 | 31 | Turret Aim Range 拆成 **Gun Depression（Low/Lower/Lowest）+ Gun Raise（High/Higher/Highest）** 两行新 id；新增 **Collision Damage** toggle；Turret Core 新增 **Freelook** 绑定（该模块开始注册按键） | 删除旧 Aim Range 规则，新增俯角/仰角/碰撞伤害/自由观察规则；Turret Core 加入绑定文件集合 |
 | 3.5.2 | 31 | **按键从 9 条减到 5 条**：Steer Left/Right、Shift Up/Down 四条绑定删除（转向与换挡改回游戏自带按键 A/D 与 Shift/CTRL）；Gunner Drive 描述改写（说明替代哪几个默认键） | 删除 4 条按键规则，改写 Gunner Drive 描述规则 |
 | 3.5.3 | 31 | 删除 3 个遗留的 Aim Range 旧文件夹（3.5.1 拆分后残留的空壳）；新增 Turret Hit Areas 资源模块（无菜单文本）；源码注释版本号统一更新 | 规则表无需变更（全部命中，0 缺口） |
+| 3.6.0 | 33 | 新增 **Maelstrom Weapons**（菜单组 `maelstrom`，含 Fire Rate / Single Belt 两个开关）与 **FRV Run Flat**（菜单组 `run_flat`，FRV Run-Flat Tires 一个开关）；60 个选项文件夹（3.5.3 为 58）；`MENU_ORDER` 全量改写以插入 `maelstrom`、`run_flat` 两位；炮手镜头新增仰角/侧倾自动抬高（仅代码）；主战坦克炮塔移动时抬升风暴漩涡吊舱（仅代码） | 新增 2 个模块对应规则（8 条）；改写 Vehicle Indicator 描述规则（新增 M-103 弹药条一句） |
 
 
 ## 为什么是直接改 Lua 而不是翻译包
@@ -50,16 +52,16 @@
 
 ## 版本更新后的重汉化流程（一条命令）
 
-作者发新版（例如 3.4.0）后，把新 zip 放进 `HD2\`，然后：
+作者发新版（例如 3.6.0）后，把新 zip 放进 `HD2\`，然后：
 
 ```powershell
-python ArmoredOverhaul-zh-Hans/update_zh.py "HD2\Armored-Overhaul-3.4.0.zip"
+python ArmoredOverhaul-zh-Hans/update_zh.py "HD2\Armored-Overhaul-3.6.0.zip"
 ```
 
 它会自动完成：解包新版本 → 从全部 patch 提取 Lua → **与 `baseline/`（上次翻译时的源码
 快照）逐文件 diff**，列出改了哪些 Lua 及差异行 → 套用翻译规则（哪条规则因原文改动而
 失配会**点名报错**）→ 扫描"仍无中文的菜单文本"（捕捉新增/改名选项）→ 回环验证 + 重建 +
-打包 `Armored-Overhaul-3.4.0-zh-Hans.zip` → 与原版逐项校验 → 成功后刷新 `baseline/`。
+打包 `Armored-Overhaul-3.6.0-zh-Hans.zip` → 与原版逐项校验 → 成功后刷新 `baseline/`。
 
 三种典型情况：
 
@@ -74,19 +76,19 @@ python ArmoredOverhaul-zh-Hans/update_zh.py "HD2\Armored-Overhaul-3.4.0.zip"
 码标记载具的 `{name = 'Bastion', hull = '...'}`、材质槽的 `{name = 'the skull', mat = ...}`、
 炮塔资源的 `{name = 'Bastion', res = ...'}`、实体哈希表的 `{name = 'Bastion', lo = 0x..., hi = 0x...}`）
 只进日志不显示——判据是"含 hull/mat/tex/slot/res 字段或十六进制常量"，会被自动识别为
-"提示项"（3.5.1 实测 22 条），不影响出包。
+"提示项"（3.6.0 实测 25 条），不影响出包。
 
 ## 手动微调（改个别译名后）
 
 ```powershell
 python ArmoredOverhaul-zh-Hans/translate.py                                     # 重套规则（直接改 extracted_zh 可跳过）
-python ArmoredOverhaul-zh-Hans/build_zh.py  "解包目录" "输出zip"                 # 目录如 Armored-Overhaul-3.5.1-extract
+python ArmoredOverhaul-zh-Hans/build_zh.py  "解包目录" "输出zip"                 # 目录如 Armored-Overhaul-3.6.0-extract
 python ArmoredOverhaul-zh-Hans/verify_zh.py "原版zip"  "输出zip"
 ```
 
 安全边界：
 - 每个**含 Lua 的 patch** 在重建前先做"原样提取→原样重建→逐字节对比"回环测试，全部通过才动手
-  （3.5.2 实测 48 个含 Lua 的 patch 全部无损）；
+  （3.6.0 实测 52 个含 Lua 的 patch 全部无损）；
 - 不含 Lua 的游戏资源 patch（悬挂、FRV 稳定、炮塔模型/骷髅贴图等）原字节拷贝，绝不重建；
 - 中文文本不含单引号/反斜杠（全角标点），不会破坏 Lua 字符串语法。
 

@@ -148,8 +148,23 @@ RULES = {
     ],
     # Vehicle Indicator
     '7D815785EAA72B5F': [
-        ("label = 'Vehicle Indicator', default = true, description = 'A small outline of your vehicle shows where the gun points compared to the hull, colored by health (blue to red). Works in the Bastion, the Maelstrom, the M-102 FRV and the M-103 Supply FRV, in any seat; the FRVs\\' tires each show their own health and go clear when popped. Only you see it.'",
-         "label = '载具指示器', default = true, description = '用一个载具轮廓小图标显示炮管相对车体的指向，并按生命值由蓝到红着色。适用于堡垒、风暴漩涡、M-102 快速侦察载具与 M-103 补给型快速侦察载具，任何座位都有效；快速侦察载具的各个轮胎分别显示生命值，爆胎后该轮显示消失。只有你自己可见。'", 1),
+        ("label = 'Vehicle Indicator', default = true, description = 'A small outline of your vehicle shows where the gun points compared to the hull, colored by health (blue to red). Works in the Bastion, the Maelstrom, the M-102 FRV and the M-103 Supply FRV, in any seat; the FRVs\\' tires each show their own health and go clear when popped, and the M-103\\'s turret gets an ammo bar. Only you see it.'",
+         "label = '载具指示器', default = true, description = '用一个载具轮廓小图标显示炮管相对车体的指向，并按生命值由蓝到红着色。适用于堡垒、风暴漩涡、M-102 快速侦察载具与 M-103 补给型快速侦察载具，任何座位都有效；快速侦察载具的各个轮胎分别显示生命值，爆胎后该轮显示消失；M-103 的炮塔会显示一条弹药条。只有你自己可见。'", 1),
+    ],
+    # (3.6.0) Maelstrom Weapons: fire rate + single belt toggles (menu group 'maelstrom')
+    '5C6913399380DB0C': [
+        ("label = 'Maelstrom Fire Rate', default = true,", "label = '风暴漩涡射速', default = true,", 1),
+        ("description = 'Hold reload in the Maelstrom\\'s gun seat to switch its main gun\\'s fire rate on the fly: 1200, 1800 or 2400 rounds a minute (the game: 1200 only). A change here reaches the next Maelstrom called in, not one already out. Off: the game\\'s own.'",
+         "description = '在风暴漩涡的炮手席按住装填键，即可随时切换主炮射速：每分钟 1200、1800 或 2400 发（游戏原版只有 1200）。此处修改对之后召唤的风暴漩涡生效，已在场的无效。关闭后恢复游戏原本的射速。'", 1),
+        ("label = 'Maelstrom Single Belt', default = true,", "label = '风暴漩涡单弹链', default = true,", 1),
+        ("description = 'The Maelstrom\\'s main gun carries all its ammo on one belt (2,100 rounds) and never reloads: reload does nothing (hold it for the fire-rate choice when Maelstrom Fire Rate is on). A change here reaches the next Maelstrom called in, not one already out. Off: the game\\'s 300-round belts.'",
+         "description = '风暴漩涡的主炮把所有弹药串成一条弹链（2100 发），永不装填：按装填键无效果（开启风暴漩涡射速时，按住装填键用于选择射速）。此处修改对之后召唤的风暴漩涡生效，已在场的无效。关闭后恢复游戏原本的 300 发弹链。'", 1),
+    ],
+    # (3.6.0) FRV Run Flat: one toggle row (menu group 'run_flat')
+    '512401A3C373703F': [
+        ("label = 'FRV Run-Flat Tires', default = true,", "label = '快速侦察载具防爆胎', default = true,", 1),
+        ("description = 'The M-102 and M-103 FRVs\\' tires never pop, and the tires of the FRV you ride in stay at full health. Works when you host or play alone (in someone else\\'s game their game decides). Turning it off puts the game\\'s own back.'",
+         "description = 'M-102 与 M-103 快速侦察载具的轮胎永不爆胎；你乘坐的快速侦察载具轮胎始终满生命值。仅在你是房主或单人游戏时有效（在他人房间中由对方的游戏决定）。关闭后恢复游戏原本的机制。'", 1),
     ],
     # Vehicle Loadout
     'F98C72F519463ACB': [
