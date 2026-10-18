@@ -117,8 +117,8 @@ RULES = {
     # (3.5.1) Collision Damage: one toggle row
     'A223EC3A199F34E3': [
         ("label = 'Tank Collision Damage Boost', default = true,", "label = '坦克碰撞伤害强化', default = true,", 1),
-        ("description = 'The faster the Bastion and Maelstrom drive into things, the harder they hit: demolition force 30 when crawling, 35 at half speed, 40 from three-quarter speed (walls, fences, small buildings). Changes every tank at once; turning it off puts the game\\'s own back.'",
-         "description = '堡垒与风暴漩涡撞上物体时车速越快、破坏力越强：慢速时为 30，半速为 35，四分之三速及以上为 40（对围墙、栅栏、小型建筑）。所有坦克立即生效；关闭后恢复游戏原本的数值。'", 1),
+        ("description = 'The faster the Bastion and Maelstrom drive into things, the harder they hit: demolition force 30 when crawling, 35 at half speed, 40 from three-quarter speed (walls, fences, small buildings). Works for the tank you drive; turning it off puts the game\\'s own back.'",
+         "description = '堡垒与风暴漩涡撞上物体时车速越快、破坏力越强：慢速时为 30，半速为 35，四分之三速及以上为 40（对围墙、栅栏、小型建筑）。对你所驾驶的那辆坦克生效；关闭后恢复游戏原本的数值。'", 1),
     ],
     # (3.4.0) handling family: one source per option (grip / torque / speed /
     # gear shifts / stability), five builds sharing the same PARTS texts
@@ -154,8 +154,8 @@ RULES = {
     # (3.6.0) Maelstrom Weapons: fire rate + single belt toggles (menu group 'maelstrom')
     '5C6913399380DB0C': [
         ("label = 'Maelstrom Fire Rate', default = true,", "label = '风暴漩涡射速', default = true,", 1),
-        ("description = 'Hold reload in the Maelstrom\\'s gun seat to switch its main gun\\'s fire rate on the fly: 1200, 1800 or 2400 rounds a minute (the game: 1200 only). A change here reaches the next Maelstrom called in, not one already out. Off: the game\\'s own.'",
-         "description = '在风暴漩涡的炮手席按住装填键，即可随时切换主炮射速：每分钟 1200、1800 或 2400 发（游戏原版只有 1200）。此处修改对之后召唤的风暴漩涡生效，已在场的无效。关闭后恢复游戏原本的射速。'", 1),
+        ("description = 'Hold reload in the Maelstrom\\'s gun seat to switch its main gun\\'s fire rate on the fly: 1200, 1800 (where it starts) or 2400 rounds a minute (the game: 1200 only); the new rate pops up by the ammo bar as the menu closes. A change here reaches the next Maelstrom called in, not one already out. Off: the game\\'s own.'",
+         "description = '在风暴漩涡的炮手席按住装填键，即可随时切换主炮射速：每分钟 1200、1800（初始档位）或 2400 发（游戏原版只有 1200）；菜单关闭时会在弹药条旁显示新的射速。此处修改对之后召唤的风暴漩涡生效，已在场的无效。关闭后恢复游戏原本的射速。'", 1),
         ("label = 'Maelstrom Single Belt', default = true,", "label = '风暴漩涡单弹链', default = true,", 1),
         ("description = 'The Maelstrom\\'s main gun carries all its ammo on one belt (2,100 rounds) and never reloads: reload does nothing (hold it for the fire-rate choice when Maelstrom Fire Rate is on). A change here reaches the next Maelstrom called in, not one already out. Off: the game\\'s 300-round belts.'",
          "description = '风暴漩涡的主炮把所有弹药串成一条弹链（2100 发），永不装填：按装填键无效果（开启风暴漩涡射速时，按住装填键用于选择射速）。此处修改对之后召唤的风暴漩涡生效，已在场的无效。关闭后恢复游戏原本的 300 发弹链。'", 1),

@@ -1,5 +1,5 @@
 -- HD2-Addon: mods/chef/armored_overhaul_maelstrom_weapons
--- Armored Overhaul 3.6.0 - Maelstrom weapons: the TD-110 Maelstrom's main gun settings for two options, each its own
+-- Armored Overhaul 3.6.2 - Maelstrom weapons: the TD-110 Maelstrom's main gun settings for two options, each its own
 -- pick (its option addon sets ArmoredOverhaulMaelstromPicks): Maelstrom Fire Rate (a hold-reload choice of the main gun's
 -- rounds per minute x1 / x1.5 / x2) and Maelstrom Single Belt (all its ammo on one belt, no reload). Written for Armored
 -- Overhaul from the author's own Leveller & Solo Silo Demo Force 50 core (the same settings-table scan).
@@ -7,7 +7,7 @@
 -- How it works: the game keeps its weapon settings in tables in memory (each behind a 24-byte 'LDLD' header; found by
 -- their table type and layout, never by fixed addresses). The main gun (tank_storm_maingun, D58AE6A04EDB10DE: 12.5mm,
 -- 1200 rpm, 300-round belt, 6 spare belts): its fire-mode record's rates (+4/+8/+12), its weapon data's left-input
--- function (+184: the fire-rate choice), one encyclopedia look-up slot (the menu's title) and its magazine record's belt
+-- function (+188, the right input, since 3.6.1 Test 6: the fire-rate choice), and its magazine record's belt
 -- and spare belts. Every copy of a table is written and read back. Every 5 s the values are checked (set again if the
 -- game put its own back); every 5 minutes a headers-only scan looks for moved or new tables. Turning it off in the Mod
 -- Options Menu puts the game's values back (also kept in a process environment variable, so a copy of this addon loaded
@@ -28,7 +28,7 @@ end) end
 local loader = rawget(_G, 'CowboyBingusModLoader')
 if type(loader) ~= 'table' or type(loader.version) ~= 'number' or loader.version < 15 then return end
 local TESTER = false
-local VERSION = ({version = '3.6.0'}).version   -- (as the other addons write it, so test builds name themselves)
+local VERSION = ({version = '3.6.2'}).version   -- (as the other addons write it, so test builds name themselves)
 
 local GUN = { name = 'Maelstrom main gun', entity = 'D58AE6A04EDB10DE', belt = 300, mags = 6, rpm = 1200 }   -- (the game's belt, spare belts and rate)
 local ENV_NAME = 'ARMORED_OVERHAUL_MAELSTROM_GAME'
@@ -39,9 +39,8 @@ local KINDS = {
     fire = { type = 0x45171B68, stride = 616, keyed = true },    -- +4 / +8 / +12 rounds per minute
     magazine = { type = 0xFB8D88A3, stride = 160, keyed = true },    -- +136 rounds per magazine, then magazines, refill, most
     weapondata = { type = 0x88E4DBB1, stride = 1232, keyed = true }, -- +184 / +188 the inputs' functions (2 = fire rate)
-    encyclopedia = { type = 0x8A40FE2F, stride = 56, keyed = true },  -- an entity's names (+0 name, +8 upper, ...)
 }
-local KIND_NAMES = { 'fire', 'magazine', 'weapondata', 'encyclopedia' }
+local KIND_NAMES = { 'fire', 'magazine', 'weapondata' }
 local OPTIONAL_WAIT = 60   -- seconds to wait for the rest of the gun's tables once one of them is found
 
 if rawget(_G, 'ArmoredOverhaulMaelstromWeapons') then return end
@@ -75,9 +74,6 @@ local function key_of(hex16)  -- entity hash as stored (u64 little-endian)
     return u32_bytes(tonumber(hex16:sub(9, 16), 16)) .. u32_bytes(tonumber(hex16:sub(1, 8), 16))
 end
 
--- (Test 10) the encyclopedia table may hold the gun's look-up slot this addon added (it shares the hull's record): not
--- counted as an entity of its own when the table's layout is worked out, so a later scan still reads the table
-KINDS.encyclopedia.ignore = key_of(GUN.entity)
 local NEEDLE = 'LDLD' .. u32_bytes(1)
 local HEADER = 24
 
@@ -378,10 +374,18 @@ end
 -- ---------------------------------------------------------------- what is wanted
 -- (Test 11, the tester: "Fire rate should only go from 1x, 1.5x, 2x. and only in the reload context menu, make Fire rate selector
 -- a toggle in the mod options") Fire Rate on = the hold-reload choice of the game's rate x1 / x1.5 / x2 (1200 / 1800 /
--- 2400; it starts at the middle one, the game's default slot).
+-- 2400).
 -- The picks come from the option addons (ArmoredOverhaulMaelstromPicks: rpm and belt = true), read when the
 -- tables are applied; the Mod Options Menu turns each on or off in game.
-local RPM_MID = 1.5        -- the middle of the three rates (x1 / x1.5 / x2)
+-- (3.6.1 Test 7, the tester: "1800 starting is fine then") The list reads low, start, high and the gun starts on the middle
+-- one, so for 1200 · 1800 · 2400 in order it starts at 1800 (x1.5); the low slot is the game's 1200 (3.6.1 Tests 2-6
+-- started at 1200 with 1800 in the low slot: the list read out of order)
+local RPM_START = 1.5
+-- (3.6.1 Test 6, the tester: "would it be possible to move to the right context menu and then not fire a missile when change
+-- the RPM with right click") The fire-rate choice is back on the RIGHT input (weapon data +188, as the FRV's MG-206 has
+-- it; 3.6.0 Test 9 to 3.6.1 Test 5: the left, +184). Tank Core now holds both tank fire actions off while the menu is
+-- open, so a right click there only picks a rate (the missiles fired with it in 3.6.0 Test 8).
+local ROF_AT, ROF_OTHER = 188, 184
 local function picks()
     local p = rawget(_G, 'ArmoredOverhaulMaelstromPicks')
     return type(p) == 'table' and p or {}
@@ -419,17 +423,16 @@ local function env_save()
 end
 
 -- ---------------------------------------------------------------- the values written
--- A watched value: group ('rpm' / 'rpm_lo' / 'rpm_hi' / 'rof' / 'name' / 'belt'), table kind, `rel` = its place in the table's payload, `idrel` /
+-- A watched value: group ('rpm' / 'rpm_lo' / 'rpm_hi' / 'rof' / 'belt'), table kind, `rel` = its place in the table's payload, `idrel` /
 -- `idb` = where the record's id is and what it must be (row tables), `game` = the game's raw value, `base` = the
 -- game's value as a number (the float for rpm), `last` = what this addon wrote last.
 local function desired(w)
     local want = wanted()
-    if w.group == 'rpm' then return want.rpm and f32_bits(w.base * RPM_MID) or w.game end
+    if w.group == 'rpm' then return want.rpm and f32_bits(w.base * RPM_START) or w.game end
     -- (the hold-reload fire-rate choice: the game's rate as the low one, twice it as the high one, the function on)
     if w.group == 'rpm_lo' then return want.rpm and f32_bits(w.base) or w.game end
     if w.group == 'rpm_hi' then return want.rpm and f32_bits(w.base * 2) or w.game end
     if w.group == 'rof' then return want.rpm and 2 or w.game end
-    if w.group == 'name' then return want.rpm and w.on or w.game end
     if w.group == 'belt' then return want.belt and w.on or w.game end    -- (Single Belt: w.on = the value with it on)
     return w.game
 end
@@ -437,7 +440,7 @@ end
 -- whose record has the right id, for row tables); returns how many copies were written
 -- the value an entry has when its option is on (what this mod writes)
 local function on_value(w)
-    if w.group == 'rpm' then return f32_bits(w.base * RPM_MID) end
+    if w.group == 'rpm' then return f32_bits(w.base * RPM_START) end
     if w.group == 'rpm_lo' then return f32_bits(w.base) end
     if w.group == 'rpm_hi' then return f32_bits(w.base * 2) end
     if w.group == 'rof' then return 2 end
@@ -593,55 +596,6 @@ local function hexdump(blob, at, n)
     for o = 0, n - 4, 4 do t[#t + 1] = string.format('%08x', u32(blob, at + o) or 0) end
     return table.concat(t, ' ')
 end
-local HULL = 'B0C9FAF4AF8903F9'      -- the TD-110 Maelstrom (tank_storm)
-local function slot_home(keyb, n)
-    local lo, hi = u32(keyb, 0), u32(keyb, 4)
-    return ((hi % n) * (4294967296 % n) + lo % n) % n
-end
-local function menu_title(T, want, place, watch)
-    local E = T.encyclopedia
-    if not E or not E.buckets then return 'menu title: the encyclopedia table not found' end
-    local n, blob = E.buckets, E.blob
-    local gun, hull = key_of(GUN.entity), key_of(HULL)
-    local h = E.index[hull]
-    if not h then return 'menu title: the Maelstrom hull is not in the encyclopedia table' end
-    local hull_idx = (h - n * 16) / E.stride
-    -- the game's look-up: the id's home slot, then the next ones, up to an empty one -> slot, 'here' / 'empty'
-    local zero = string.rep('\0', 8)
-    local function probe(key)
-        local slot = slot_home(key, n)
-        for _ = 1, n do
-            local k = blob:sub(slot * 16 + 1, slot * 16 + 8)
-            if k == key then return slot, 'here' end
-            if k == zero then return slot, 'empty' end
-            slot = slot + 1 == n and 0 or slot + 1
-        end
-    end
-    -- (the look-up must find the hull and the FRV's MG-206 where the table has them, else the layout isn't as known)
-    for _, hx in ipairs({HULL, '085C1EDB038EC24E'}) do
-        local k = key_of(hx)
-        local s2, f2 = probe(k)
-        if E.index[k] and (f2 ~= 'here' or n * 16 + u32(blob, s2 * 16 + 8) * E.stride ~= E.index[k]) then
-            return 'menu title: the encyclopedia look-up is not as known (left alone)'
-        end
-    end
-    local slot, found = probe(gun)
-    if not found then return 'menu title: no free slot in the encyclopedia look-up' end
-    local o = slot * 16
-    if found == 'here' and u32(blob, o + 8) ~= hull_idx then return 'menu title: the gun has its own encyclopedia entry now (left alone)' end
-    -- (in order: the record index, then the id's halves; turned off, the other way round: the id first. Either way the
-    -- slot is never the gun's id with another record's index)
-    if found == 'empty' and (u32(blob, o + 8) ~= 0 or u32(blob, o + 12) ~= 0) then return 'menu title: the free slot is not empty (left alone)' end
-    local ws = {}
-    for _, e in ipairs({{8, hull_idx}, {4, u32(gun, 4)}, {0, u32(gun, 0)}}) do
-        local w = place({group = 'name', kind = 'encyclopedia', rel = o + e[1], game = 0, base = 0, on = e[2]})
-        watch[#watch + 1] = w
-        ws[#ws + 1] = w
-    end
-    for i = want.rpm and 1 or #ws, want.rpm and #ws or 1, want.rpm and 1 or -1 do write_entry(ws[i], desired(ws[i])) end
-    return string.format('menu title: the gun -> the Maelstrom hull\'s encyclopedia entry (record %d; look-up slot %d of %d%s): %s', hull_idx, slot, n,
-        found == 'here' and ', already set' or '', want.rpm and 'on' or 'off')
-end
 local function apply(T)
     if not kept then env_read() end
     local want = wanted()
@@ -660,9 +614,9 @@ local function apply(T)
     for _, name in ipairs(KIND_NAMES) do if T[name] then S.T[name] = {copies = T[name].copies, payload = T[name].payload} end end
     local p = picks()
     -- the main gun (3.6.0 Test 6): its rounds per minute (fire-mode record +4/+8/+12 floats: low / default / high), the
-    -- hold-reload fire-rate choice (weapon data +184, the LEFT input's function: 2 = fire rate; the FRV's MG-206 has it on
-    -- the right, +188, but in the Maelstrom's gun seat the right button fires the missiles: Test 9, the tester: "lets move
-    -- that to the main fire button";
+    -- hold-reload fire-rate choice (weapon data ROF_AT, the input's function: 2 = fire rate; the FRV's MG-206 has it on
+    -- the right, +188; 3.6.0 Test 9 moved it to the left, +184, as the right button fired the missiles; 3.6.1 Test 6 back
+    -- on the right, with Tank Core holding the tank's fire off while the menu is open);
     -- then the low and high rates are the game's and twice it) and its belt (magazine record +136: rounds, then
     -- magazines, refill, most). Each written in the LDLD table and in the game's own copy (the one the game reads).
     if p.rpm or p.belt then
@@ -696,7 +650,7 @@ local function apply(T)
             -- even when the choice was refused), and only when the gun's rate is the game's 1200 (a patch that changed it,
             -- or moved the fields, is refused rather than scaled)
             local now = f and live_now('fire', f + 8)
-            local game = now and game_value('fire:' .. GUN.entity .. ':8', now, function(v, g) local a, b = f32(v), f32(g); return b > 0 and math.abs(a / b - RPM_MID) < 0.01 end)
+            local game = now and game_value('fire:' .. GUN.entity .. ':8', now, function(v, g) local a, b = f32(v), f32(g); return b > 0 and math.abs(a / b - RPM_START) < 0.01 end)
             local base = game and f32(game)
             local mg = wd and T.weapondata.index[key_of('085C1EDB038EC24E')]
             local why = nil
@@ -707,11 +661,11 @@ local function apply(T)
             end
             local g_rof, g_lo, g_hi
             if not why then
-                local rof_now, right_now = live_now('weapondata', wd + 184), live_now('weapondata', wd + 188)
+                local rof_now, right_now = live_now('weapondata', wd + ROF_AT), live_now('weapondata', wd + ROF_OTHER)
                 local lo_now, hi_now = live_now('fire', f + 4), live_now('fire', f + 12)
                 if not (rof_now and right_now and lo_now and hi_now) then why = 'its records could not be read'
                 else
-                    g_rof = game_value('weapondata:' .. GUN.entity .. ':184', rof_now, function(v) return v == 2 end)
+                    g_rof = game_value('weapondata:' .. GUN.entity .. ':' .. ROF_AT, rof_now, function(v) return v == 2 end)
                     g_lo = game_value('fire:' .. GUN.entity .. ':4', lo_now, function(v) return v == f32_bits(base) end)
                     g_hi = game_value('fire:' .. GUN.entity .. ':12', hi_now, function(v) return v == f32_bits(base * 2) end)
                     if g_rof ~= 0 or right_now ~= 0 then why = 'the gun already has an input function'
@@ -721,21 +675,19 @@ local function apply(T)
             if why then
                 lines[#lines + 1] = '  Maelstrom Fire Rate: not added (' .. why .. ')'
             else
-                for _, e in ipairs({{'rpm', 'fire', f + 8, game}, {'rof', 'weapondata', wd + 184, g_rof}, {'rpm_lo', 'fire', f + 4, g_lo}, {'rpm_hi', 'fire', f + 12, g_hi}}) do
+                for _, e in ipairs({{'rpm', 'fire', f + 8, game}, {'rof', 'weapondata', wd + ROF_AT, g_rof}, {'rpm_lo', 'fire', f + 4, g_lo}, {'rpm_hi', 'fire', f + 12, g_hi}}) do
                     local w2 = place({group = e[1], kind = e[2], rel = e[3], game = e[4], base = base})
                     watch[#watch + 1] = w2
                     changed = changed + write_entry(w2, desired(w2))
                 end
-                lines[#lines + 1] = string.format('  rounds per minute (fire-mode +8, the middle choice): the game\'s %.0f -> %s%s', base,
-                    want.rpm and string.format('%.0f (x%g)', base * RPM_MID, RPM_MID) or 'the game\'s (off in the Mod Options Menu)', where_note('fire'))
-                lines[#lines + 1] = string.format('  hold-reload fire-rate choice (weapon data +184, the left input -> 2; fire-mode +4 / +12 -> %.0f / %.0f): %s%s', base, base * 2,
+                lines[#lines + 1] = string.format('  rounds per minute (fire-mode +8, where it starts): the game\'s %.0f -> %s%s', base,
+                    want.rpm and string.format('%.0f (x%g)', base * RPM_START, RPM_START) or 'the game\'s (off in the Mod Options Menu)', where_note('fire'))
+                lines[#lines + 1] = string.format('  hold-reload fire-rate choice (weapon data +%d, the %s input -> 2; fire-mode +4 / +12 -> %.0f / %.0f): %s%s', ROF_AT, ROF_AT == 188 and 'right' or 'left', base, base * 2,
                     want.rpm and 'on' or 'off (the game\'s: none)', where_note('weapondata'))
-                -- (Test 10, the tester: "you can just put Maelstrom as the title for the context menu") The menu's title is the
-                -- weapon's name from its encyclopedia entry; the gun has none (the menu kept the last weapon's name, e.g.
-                -- the Verdict). One slot of the encyclopedia table's look-up gets the gun's id pointing at the Maelstrom
-                -- hull's own entry ("Maelstrom" / "MAELSTROM"): no record written. The slot is where the game's look-up
-                -- (id modulo the slot count, then the next ones) stops for the gun now, so no other look-up changes.
-                lines[#lines + 1] = '  ' .. menu_title(T, want, place, watch)
+                -- (3.6.1 release, the tester: "if you hold the context menu on the bastion, it also says Maelstrom on it ...
+                -- you can just remove the label for maelstrom") 3.6.0 Test 10's menu title (the gun's id added to the
+                -- encyclopedia look-up, pointing at the hull's entry) is gone: the game keeps the last title it showed, so
+                -- the Bastion's menu said Maelstrom too. The menu shows what the game's own shows.
             end
         end
         if p.belt then
@@ -826,7 +778,16 @@ local function check()
 end
 
 -- ---------------------------------------------------------------- main loop
-local REFRESH = 300   -- seconds between refresh passes (headers only) looking for moved or new tables
+-- (3.6.2 Test 4, the tester: "same with most of the Armored Overhaul modules") Once applied: the log written only when
+-- something changes (3.6.1: every 60 s); the refresh pass through all memory every 5 minutes only for a table whose game
+-- copy (the one the game reads, followed by its settings-root global at every check) wasn't found; nothing at all with
+-- neither Maelstrom Fire Rate nor Single Belt picked. The values stay checked every 5 s (a handful of small reads): a
+-- Maelstrom takes them as it is called in, wherever you are (3.6.2 review: Test 4 checked once a minute out of a tank).
+local CHECK_EVERY, REFRESH = 5, 300
+local function needs_refresh()
+    for kind in pairs(S.T or {}) do if not (S.live and S.live[kind]) then return true end end
+    return false
+end
 local function run()
     local skip_low = (api.address_of(NEEDLE) or LOW) < LOW
     local started, passes, shared_found = api.now(), 0, nil
@@ -837,20 +798,21 @@ local function run()
         while api.now() < until_t and not (S.switched and S.sig) do coroutine.yield(); yielded = true end
         if yielded then slice_end = api.now() + BUDGET end
     end
-    local function watch_for(seconds)   -- checks every 5 s; false when a table moved
-        for _ = 1, math.floor(seconds / 5) do
-            wait(5)
-            if check() == 'moved' then event('a settings table moved; scanning again'); S.sig, S.swept = nil, nil; return false end
-            if api.now() >= (S.next_log or 0) then S.next_log = api.now() + 60; S.dirty = true end
+    local function watch()               -- checks every 5 s; returns when a table moved
+        local refreshed = api.now()
+        while true do
+            wait(CHECK_EVERY)
+            if check() == 'moved' then event('a settings table moved; scanning again'); S.sig, S.swept = nil, nil; return end
+            if api.now() - refreshed >= REFRESH and needs_refresh() then
+                refreshed = api.now()
+                scan_pass(skip_low, false, true)
+                if found_sig() ~= S.sig then event('the settings tables changed; scanning again'); S.sig, S.swept = nil, nil; return end
+            end
         end
-        return true
     end
     while true do
         if S.sig then
-            if watch_for(REFRESH) then
-                scan_pass(skip_low, false, true)
-                if found_sig() ~= S.sig then event('the settings tables changed; scanning again'); S.sig, S.swept = nil, nil end
-            end
+            watch()
             started, passes, shared_found = api.now(), 0, nil
         else
             passes = passes + 1
@@ -874,7 +836,6 @@ local function run()
                     ok and 'active' or 'nothing to change (see below)', api.now() - started, passes, passes == 1 and '' or 'es', chains, n)
                 event('tables found; ' .. n .. ' value(s) written')
                 write_log()
-                S.next_log = api.now() + 60
             else
                 S.status = 'searching (pass ' .. passes .. '); waiting for: ' .. (T.absent or 'the gun\'s tables')
                 if passes == 1 or passes % 20 == 0 then event(S.status) end
@@ -940,7 +901,7 @@ menu_rows.maelstrom = function()
     if type(p) ~= 'table' then p = {} end
     if p.rpm == true then
         rows[#rows + 1] = {'armored_overhaul.maelstrom_fire_rate', {type = 'toggle', label = '风暴漩涡射速', default = true,
-            description = '在风暴漩涡的炮手席按住装填键，即可随时切换主炮射速：每分钟 1200、1800 或 2400 发（游戏原版只有 1200）。此处修改对之后召唤的风暴漩涡生效，已在场的无效。关闭后恢复游戏原本的射速。'}, 'rpm'}
+            description = '在风暴漩涡的炮手席按住装填键，即可随时切换主炮射速：每分钟 1200、1800（初始档位）或 2400 发（游戏原版只有 1200）；菜单关闭时会在弹药条旁显示新的射速。此处修改对之后召唤的风暴漩涡生效，已在场的无效。关闭后恢复游戏原本的射速。'}, 'rpm'}
     end
     if p.belt == true then
         rows[#rows + 1] = {'armored_overhaul.maelstrom_single_belt', {type = 'toggle', label = '风暴漩涡单弹链', default = true,
@@ -995,6 +956,14 @@ local function tick()
     S.frame = S.frame + 1
     menu_link(S.frame)
     if S.frame < 120 or coroutine.status(worker) == 'dead' then return end
+    if S.frame == 120 then
+        local p = picks()
+        if not (p.rpm or p.belt) then
+            S.status, S.nothing = 'off: neither Maelstrom Fire Rate nor Maelstrom Single Belt is picked', true
+            write_log()
+        end
+    end
+    if S.nothing then return end
     slice_end = api.now() + BUDGET
     local fine, err = coroutine.resume(worker)
     if not fine then
