@@ -1,21 +1,23 @@
-# Armored Overhaul 简体中文汉化（当前：3.6.2）
+# Armored Overhaul 简体中文汉化（当前：3.7.0）
 
 ## 汉化范围（游戏内全部会显示的模组文本）
 
-3.6.2 共 **33 个菜单模块**全部汉化：
+3.7.0 共 **33 个菜单模块**全部汉化：
 
 - **模组选项菜单（MODS 页，类别「装甲强化」）**：
   坦克极速 / 坦克发动机扭矩 / 坦克抓地力 / 坦克稳定性 / 坦克油门响应 /
   坦克油门响应（换挡）/ 坦克转向 / 坦克炮塔位置 / 坦克炮塔回转速度 /
   坦克火炮俯仰速度 / 坦克火炮俯角 / 坦克火炮仰角 /
-  坦克碰撞伤害强化 / 坦克炮手镜头 / 坦克自动装弹机 /
+  坦克碰撞拆毁强化 / 坦克炮手镜头 / 坦克自动装弹机 /
   风暴漩涡射速 / 风暴漩涡单弹链 / 快速侦察载具防爆胎 /
   炮手驾驶 / 驾驶员面板 / 载具指示器 / 载具配置——含全部下拉选项与描述。
 - **模组绑定菜单（控制页 MODS 分区「装甲强化」）** 8 条按键：
   炮手驾驶：前进/后退/手刹/鸣笛/烟雾（风暴漩涡），
   炮手镜头：拉近/拉远，坦克炮塔：自由观察。
-- **术语**按社区 wiki 口径（`terms.json`/`stratagems_full.json`）：
-  Bastion=堡垒，Maelstrom=风暴漩涡，FRV=快速侦察载具，Exosuit=外骨骼装甲。
+- **术语**按社区 wiki 口径（`wiki_terms.json`）：
+  Bastion=堡垒，Maelstrom=风暴漩涡，FRV=快速侦察载具，Exosuit=外骨骼装甲，
+  M-102=炮手，M-103=补给型，M-104=焚化者（均接"快速侦察载具"），
+  Demolition Force=拆毁值。
 
 ### 版本差异备忘
 
@@ -27,7 +29,8 @@
 | 3.5.2 | 31 | **按键从 9 条减到 5 条**：Steer Left/Right、Shift Up/Down 四条绑定删除（转向与换挡改回游戏自带按键 A/D 与 Shift/CTRL）；Gunner Drive 描述改写（说明替代哪几个默认键） | 删除 4 条按键规则，改写 Gunner Drive 描述规则 |
 | 3.5.3 | 31 | 删除 3 个遗留的 Aim Range 旧文件夹（3.5.1 拆分后残留的空壳）；新增 Turret Hit Areas 资源模块（无菜单文本）；源码注释版本号统一更新 | 规则表无需变更（全部命中，0 缺口） |
 | 3.6.0 | 33 | 新增 **Maelstrom Weapons**（菜单组 `maelstrom`，含 Fire Rate / Single Belt 两个开关）与 **FRV Run Flat**（菜单组 `run_flat`，FRV Run-Flat Tires 一个开关）；60 个选项文件夹（3.5.3 为 58）；`MENU_ORDER` 全量改写以插入 `maelstrom`、`run_flat` 两位；炮手镜头新增仰角/侧倾自动抬高（仅代码）；主战坦克炮塔移动时抬升风暴漩涡吊舱（仅代码） | 新增 2 个模块对应规则（8 条）；改写 Vehicle Indicator 描述规则（新增 M-103 弹药条一句） |
-| 3.6.2 | 33 | 新增 **Fire Rate Display**（纯显示模块：菜单关闭时在弹药条旁显示新射速，**无菜单文本**）；61 个选项文件夹（3.6.0 为 60）；大面积"未上车即空转"优化，仅代码：抓地/扭矩/极速/稳定/换挡/转向/油门组、Turret Core、Collision Damage、Run Flat、Vehicle Loadout 在非坦克座位时不查内存；炮手镜头缩放在地图/暂停菜单打开时不再生效；Maelstrom 射速改到右键菜单并默认 1800（仅代码） | 改写 2 条描述规则：Collision Damage（"Changes every tank at once"→"Works for the tank you drive"）、Maelstrom Fire Rate（新增"1800 为初始档位"与"菜单关闭时弹出射速"两句） |
+| 3.6.2 | 33 | 新增 **Fire Rate Display**（纯显示模块：菜单关闭时在弹药条旁显示新射速，**无菜单文本**）；61 个选项文件夹（3.6.0 为 60）；大面积“未上车即空转”优化，仅代码：抓地/扭矩/极速/稳定/换挡/转向/油门组、Turret Core、Collision Damage、Run Flat、Vehicle Loadout 在非坦克座位时不查内存；炮手镜头缩放在地图/暂停菜单打开时不再生效；Maelstrom 射速改到右键菜单并默认 1800（仅代码） | 改写 2 条描述规则：Collision Damage（"Changes every tank at once"→"Works for the tank you drive"）、Maelstrom Fire Rate（新增"1800 为初始档位"与"菜单关闭时弹出射速"两句） |
+| 3.7.0 | 33 | 新增 **Model Mods 360 / Model Mods 360 Bastion / Model Mods 360 Maelstrom**（纯模型资源，**无菜单文本**）；`Turret Hit Areas` 与 `Turret Models` 拆成 **Bastion / Maelstrom** 两个文件夹；66 个选项文件夹（3.6.2 为 61）；新增载具 **M-104 Incinerator FRV**（进入 Run Flat 与 Vehicle Indicator 的适用名单）；菜单模块数不变 | 改写 3 条规则：Collision Damage 标签 `Tank Collision Damage Boost`→`Tank Collision Demolition Boost`（译名按 wiki 口径改为"坦克碰撞拆毁强化"，描述中的 demolition force 改译"拆毁值"）、Run Flat 描述新增 M-104、Vehicle Indicator 描述整体改写（加入 M-104 与驾驶位弹药条说明） |
 
 
 ## 为什么是直接改 Lua 而不是翻译包
@@ -53,16 +56,16 @@
 
 ## 版本更新后的重汉化流程（一条命令）
 
-作者发新版（例如 3.6.2）后，把新 zip 放进 `HD2\`，然后：
+作者发新版（例如 3.7.0）后，把新 zip 放进 `HD2\`，然后：
 
 ```powershell
-python ArmoredOverhaul-zh-Hans/update_zh.py "HD2\Armored-Overhaul-3.6.2.zip"
+python ArmoredOverhaul-zh-Hans/update_zh.py "HD2\Armored-Overhaul-3.7.0.zip"
 ```
 
 它会自动完成：解包新版本 → 从全部 patch 提取 Lua → **与 `baseline/`（上次翻译时的源码
 快照）逐文件 diff**，列出改了哪些 Lua 及差异行 → 套用翻译规则（哪条规则因原文改动而
 失配会**点名报错**）→ 扫描"仍无中文的菜单文本"（捕捉新增/改名选项）→ 回环验证 + 重建 +
-打包 `Armored-Overhaul-3.6.2-zh-Hans.zip` → 与原版逐项校验 → 成功后刷新 `baseline/`。
+打包 `Armored-Overhaul-3.7.0-zh-Hans.zip` → 与原版逐项校验 → 成功后刷新 `baseline/`。
 
 三种典型情况：
 
@@ -77,19 +80,19 @@ python ArmoredOverhaul-zh-Hans/update_zh.py "HD2\Armored-Overhaul-3.6.2.zip"
 码标记载具的 `{name = 'Bastion', hull = '...'}`、材质槽的 `{name = 'the skull', mat = ...}`、
 炮塔资源的 `{name = 'Bastion', res = ...'}`、实体哈希表的 `{name = 'Bastion', lo = 0x..., hi = 0x...}`）
 只进日志不显示——判据是"含 hull/mat/tex/slot/res 字段或十六进制常量"，会被自动识别为
-"提示项"（3.6.2 实测 25 条），不影响出包。
+"提示项"（3.7.0 实测 33 条），不影响出包。
 
 ## 手动微调（改个别译名后）
 
 ```powershell
 python ArmoredOverhaul-zh-Hans/translate.py                                     # 重套规则（直接改 extracted_zh 可跳过）
-python ArmoredOverhaul-zh-Hans/build_zh.py  "解包目录" "输出zip"                 # 目录如 Armored-Overhaul-3.6.2-extract
+python ArmoredOverhaul-zh-Hans/build_zh.py  "解包目录" "输出zip"                 # 目录如 Armored-Overhaul-3.7.0-extract
 python ArmoredOverhaul-zh-Hans/verify_zh.py "原版zip"  "输出zip"
 ```
 
 安全边界：
 - 每个**含 Lua 的 patch** 在重建前先做"原样提取→原样重建→逐字节对比"回环测试，全部通过才动手
-  （3.6.2 实测 53 个含 Lua 的 patch 全部无损）；
+  （3.7.0 实测 56 个含 Lua 的 patch 全部无损）；
 - 不含 Lua 的游戏资源 patch（悬挂、FRV 稳定、炮塔模型/骷髅贴图等）原字节拷贝，绝不重建；
 - 中文文本不含单引号/反斜杠（全角标点），不会破坏 Lua 字符串语法。
 

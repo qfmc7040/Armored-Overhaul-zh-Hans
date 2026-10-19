@@ -116,9 +116,9 @@ RULES = {
     ],
     # (3.5.1) Collision Damage: one toggle row
     'A223EC3A199F34E3': [
-        ("label = 'Tank Collision Damage Boost', default = true,", "label = '坦克碰撞伤害强化', default = true,", 1),
+        ("label = 'Tank Collision Demolition Boost', default = true,", "label = '坦克碰撞拆毁强化', default = true,", 1),
         ("description = 'The faster the Bastion and Maelstrom drive into things, the harder they hit: demolition force 30 when crawling, 35 at half speed, 40 from three-quarter speed (walls, fences, small buildings). Works for the tank you drive; turning it off puts the game\\'s own back.'",
-         "description = '堡垒与风暴漩涡撞上物体时车速越快、破坏力越强：慢速时为 30，半速为 35，四分之三速及以上为 40（对围墙、栅栏、小型建筑）。对你所驾驶的那辆坦克生效；关闭后恢复游戏原本的数值。'", 1),
+         "description = '堡垒与风暴漩涡撞上物体时车速越快、拆毁值越高：慢速时为 30，半速为 35，四分之三速及以上为 40（对围墙、栅栏、小型建筑）。对你所驾驶的那辆坦克生效；关闭后恢复游戏原本的数值。'", 1),
     ],
     # (3.4.0) handling family: one source per option (grip / torque / speed /
     # gear shifts / stability), five builds sharing the same PARTS texts
@@ -148,8 +148,8 @@ RULES = {
     ],
     # Vehicle Indicator
     '7D815785EAA72B5F': [
-        ("label = 'Vehicle Indicator', default = true, description = 'A small outline of your vehicle shows where the gun points compared to the hull, colored by health (blue to red). Works in the Bastion, the Maelstrom, the M-102 FRV and the M-103 Supply FRV, in any seat; the FRVs\\' tires each show their own health and go clear when popped, and the M-103\\'s turret gets an ammo bar. Only you see it.'",
-         "label = '载具指示器', default = true, description = '用一个载具轮廓小图标显示炮管相对车体的指向，并按生命值由蓝到红着色。适用于堡垒、风暴漩涡、M-102 快速侦察载具与 M-103 补给型快速侦察载具，任何座位都有效；快速侦察载具的各个轮胎分别显示生命值，爆胎后该轮显示消失；M-103 的炮塔会显示一条弹药条。只有你自己可见。'", 1),
+        ("label = 'Vehicle Indicator', default = true, description = 'A small outline of your vehicle shows where the gun points compared to the hull, colored by health (blue to red). Works in the Bastion, the Maelstrom and the M-102, M-103 and M-104 FRVs, in any seat; the FRVs\\' tires show their own health and go clear when popped. In the driver seat a bar shows the gunner\\'s ammo left (the M-103\\'s turret: any seat). Only you see it.'",
+         "label = '载具指示器', default = true, description = '用一个载具轮廓小图标显示炮管相对车体的指向，并按生命值由蓝到红着色。适用于堡垒、风暴漩涡，以及 M-102、M-103 与 M-104 快速侦察载具，任何座位都有效；快速侦察载具的各个轮胎分别显示生命值，爆胎后该轮显示消失。坐在驾驶位时，一条进度条显示炮手剩余弹药（M-103 的炮塔则在任何座位都显示）。只有你自己可见。'", 1),
     ],
     # (3.6.0) Maelstrom Weapons: fire rate + single belt toggles (menu group 'maelstrom')
     '5C6913399380DB0C': [
@@ -163,8 +163,8 @@ RULES = {
     # (3.6.0) FRV Run Flat: one toggle row (menu group 'run_flat')
     '512401A3C373703F': [
         ("label = 'FRV Run-Flat Tires', default = true,", "label = '快速侦察载具防爆胎', default = true,", 1),
-        ("description = 'The M-102 and M-103 FRVs\\' tires never pop, and the tires of the FRV you ride in stay at full health. Works when you host or play alone (in someone else\\'s game their game decides). Turning it off puts the game\\'s own back.'",
-         "description = 'M-102 与 M-103 快速侦察载具的轮胎永不爆胎；你乘坐的快速侦察载具轮胎始终满生命值。仅在你是房主或单人游戏时有效（在他人房间中由对方的游戏决定）。关闭后恢复游戏原本的机制。'", 1),
+        ("description = 'The M-102, M-103 and M-104 FRVs\\' tires never pop, and the tires of the FRV you ride in stay at full health. Works when you host or play alone (in someone else\\'s game their game decides). Turning it off puts the game\\'s own back.'",
+         "description = 'M-102、M-103 与 M-104 快速侦察载具的轮胎永不爆胎；你乘坐的快速侦察载具轮胎始终满生命值。仅在你是房主或单人游戏时有效（在他人房间中由对方的游戏决定）。关闭后恢复游戏原本的机制。'", 1),
     ],
     # Vehicle Loadout
     'F98C72F519463ACB': [

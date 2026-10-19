@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """One-command re-localization for a new Armored Overhaul version.
 
-usage: update_zh.py <original-zip> [output-zip]
+usage: update_zh.py <original-zip> [output-zip] [work-dir]
 
-1. unzip the mod next to the zip (<stem>-extract)
+1. unzip the mod into <work-dir>/<stem>-extract (default: the workspace)
 2. pull every lua/bin out of its patches into extracted/ (fresh)
 3. diff against baseline/ — the sources the current rules were written against
 4. apply the translation rules (translate.py — aborts naming the stale rule)
@@ -104,8 +104,9 @@ def main(argv):
     if len(argv) < 2:
         raise SystemExit(__doc__)
     src_zip = Path(argv[1])
-    out_zip = Path(argv[2]) if len(argv) > 2 else src_zip.with_name(src_zip.stem + '-zh-Hans.zip')
-    extract = src_zip.with_name(src_zip.stem + '-extract')
+    work = Path(argv[3]) if len(argv) > 3 else ROOT
+    out_zip = Path(argv[2]) if len(argv) > 2 else work / (src_zip.stem + '-zh-Hans.zip')
+    extract = work / (src_zip.stem + '-extract')
 
     # 1) unzip
     if extract.exists():
@@ -162,7 +163,7 @@ def main(argv):
         print('>> 校验未通过：不要安装这份 zip；按输出排查后重跑。')
         return 1
 
-    # 8) snapshot for the next update
+    # 8) snapshot for the next update (only with explicit success)
     if baseline.exists():
         shutil.rmtree(baseline)
     shutil.copytree(ROOT / 'extracted', baseline)
